@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RT Smart App - Manajemen Warga</title>
@@ -186,12 +184,10 @@
           <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
         </div>
         <div class="kas-filter-row">
-          <select id="filter-bulan-kas" style="flex:1;"></select>
-          <select id="filter-tahun-kas" style="width:90px;"></select>
-          <select id="filter-kas-jenis" onchange="loadKas()" style="flex:1;">
+          <select id="filter-kas-jenis" onchange="loadKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
             <option value="">Semua Transaksi</option>
-            <option value="masuk">Kas Masuk</option>
-            <option value="keluar">Kas Keluar</option>
+            <option value="masuk">📥 Kas Masuk</option>
+            <option value="keluar">📤 Kas Keluar</option>
           </select>
         </div>
         <div class="flex-row" style="margin-bottom:12px;">
@@ -445,8 +441,37 @@ document.querySelectorAll('.overlay').forEach(o => {
 });
 
 // ============================================================
-// AUTH
+// AUTH + SESSION PERSISTENCE
 // ============================================================
+
+function saveSession(user) {
+  if (user === 'admin') {
+    localStorage.setItem('rt_session', JSON.stringify({ role: 'admin' }));
+  } else {
+    localStorage.setItem('rt_session', JSON.stringify({ role: 'warga', id: user.id }));
+  }
+}
+function clearSession() {
+  localStorage.removeItem('rt_session');
+}
+async function restoreSession() {
+  const raw = localStorage.getItem('rt_session');
+  if (!raw) return false;
+  try {
+    const session = JSON.parse(raw);
+    if (session.role === 'admin') {
+      currentUser = 'admin';
+      return true;
+    } else if (session.role === 'warga' && session.id) {
+      const { data, error } = await db.from('warga').select('*').eq('id', session.id).single();
+      if (error || !data) { clearSession(); return false; }
+      currentUser = data;
+      return true;
+    }
+  } catch(e) { clearSession(); return false; }
+  return false;
+}
+
 function switchLoginTab(tab) {
   document.querySelectorAll('.login-tab').forEach((t,i) =>
     t.classList.toggle('active', (i===0&&tab==='admin')||(i===1&&tab==='warga')));
@@ -457,6 +482,7 @@ function loginAdmin() {
   const pass = document.getElementById('admin-pass').value.trim();
   if (pass !== '111') { showToast('Kode admin salah!','error'); return; }
   currentUser = 'admin';
+  saveSession(currentUser);
   startApp();
 }
 async function loginWarga() {
@@ -470,10 +496,12 @@ async function loginWarga() {
   const warga = data.find(w => w.password===pass);
   if (!warga) { showToast('Password salah!','error'); return; }
   currentUser = warga;
+  saveSession(currentUser);
   startApp();
 }
 function logout() {
   currentUser = null;
+  clearSession();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('admin-pass').value = '';
@@ -493,7 +521,6 @@ function startApp() {
   const thNik     = document.getElementById('th-nik');      if (thNik)     thNik.style.display     = isAdmin ? '' : 'none';
   const thKasAksi = document.getElementById('th-kas-aksi'); if (thKasAksi) thKasAksi.style.display = isAdmin ? '' : 'none';
   initFilterBulanTahun('filter-bulan-iuran', 'filter-tahun-iuran', loadIuran);
-  initFilterBulanTahun('filter-bulan-kas',   'filter-tahun-kas',   loadKas);
   loadDashboard(); loadWarga(); loadIuran(); loadKas(); loadProfil();
 }
 
@@ -760,15 +787,48 @@ function showModalIuran(wargaId, nama, iuranId) {
 }
 async function saveIuran(e) {
   e.preventDefault();
-  const iuranId=document.getElementById('i-id').value, wargaId=document.getElementById('i-warga-id').value;
-  const bulan=parseInt(document.getElementById('filter-bulan-iuran').value), tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
-  const payload={ warga_id:wargaId, bulan, tahun, status:document.getElementById('i-status').value, nominal:parseInt(document.getElementById('i-nominal').value)||50000, tgl_bayar:document.getElementById('i-tglbayar').value||null, keterangan:document.getElementById('i-ket').value };
+  const iuranId  = document.getElementById('i-id').value;
+  const wargaId  = document.getElementById('i-warga-id').value;
+  const bulan    = parseInt(document.getElementById('filter-bulan-iuran').value);
+  const tahun    = parseInt(document.getElementById('filter-tahun-iuran').value);
+  const status   = document.getElementById('i-status').value;
+  const nominal  = parseInt(document.getElementById('i-nominal').value) || 50000;
+  const tglBayar = document.getElementById('i-tglbayar').value || null;
+  const ket      = document.getElementById('i-ket').value;
+
+  const payload = { warga_id:wargaId, bulan, tahun, status, nominal, tgl_bayar:tglBayar, keterangan:ket };
   let err;
   if (iuranId) { const r=await db.from('iuran').update(payload).eq('id',iuranId); err=r.error; }
   else         { const r=await db.from('iuran').insert(payload); err=r.error; }
   if (err) { showToast('Gagal: '+err.message,'error'); return; }
-  showToast('Status iuran disimpan!'); closeModal('modal-iuran'); document.getElementById('form-iuran').reset();
-  logAktivitas('Update Iuran', wargaId); loadIuran(); loadDashboard();
+
+  // AUTO-INSERT KAS MASUK jika status = lunas
+  if (status === 'lunas') {
+    // Cari nama warga untuk keterangan
+    const warga = allIuranData.find(w => w.id === wargaId);
+    const namaWarga = warga ? warga.nama_kk : wargaId;
+    const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+    // Cek apakah sudah ada entri kas untuk iuran ini (hindari duplikat)
+    const refKey = `iuran-${wargaId}-${bulan}-${tahun}`;
+    const { data: existing } = await db.from('kas').select('id').eq('keterangan', `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`);
+    if (!existing || existing.length === 0) {
+      await db.from('kas').insert({
+        tanggal:    tglBayar || new Date().toISOString().slice(0,10),
+        jenis:      'masuk',
+        nominal:    nominal,
+        keterangan: `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`,
+        kategori:   'iuran',
+        created_by: 'auto'
+      });
+    }
+  }
+
+  showToast('Status iuran disimpan!');
+  closeModal('modal-iuran');
+  document.getElementById('form-iuran').reset();
+  logAktivitas('Update Iuran', wargaId);
+  loadIuran(); loadDashboard(); loadKas();
 }
 async function generateIuranBulanan() {
   const bulan=parseInt(document.getElementById('filter-bulan-iuran').value), tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
@@ -786,18 +846,17 @@ async function generateIuranBulanan() {
 // KAS RT
 // ============================================================
 async function loadKas() {
-  const jenis =document.getElementById('filter-kas-jenis').value;
-  const bulan =parseInt(document.getElementById('filter-bulan-kas').value);
-  const tahun =parseInt(document.getElementById('filter-tahun-kas').value);
-  const tglAwal  = `${tahun}-${String(bulan).padStart(2,'0')}-01`;
-  const tglAkhir = new Date(tahun, bulan, 0).toISOString().slice(0,10);
-  let query = db.from('kas').select('*').gte('tanggal',tglAwal).lte('tanggal',tglAkhir).order('tanggal',{ascending:false});
+  const jenis = document.getElementById('filter-kas-jenis').value;
+  // Selalu query semua transaksi tanpa filter periode
+  let query = db.from('kas').select('*').order('tanggal', {ascending: false});
   if (jenis) query = query.eq('jenis', jenis);
   const { data, error } = await query;
   if (error) { showToast('Gagal memuat data kas','error'); return; }
   allKasData = data || [];
-  const totalMasuk  = allKasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
-  const totalKeluar = allKasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
+  // Summary selalu dari SEMUA data (tanpa filter jenis)
+  const { data: allData } = await db.from('kas').select('nominal, jenis');
+  const totalMasuk  = (allData||[]).filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
+  const totalKeluar = (allData||[]).filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
   document.getElementById('kas-masuk-total').textContent = rp(totalMasuk);
   document.getElementById('kas-keluar-total').textContent = rp(totalKeluar);
   document.getElementById('kas-saldo').textContent = rp(totalMasuk - totalKeluar);
@@ -850,21 +909,19 @@ async function deleteKas(id) {
 }
 function exportKasPDF() {
   const { jsPDF }=window.jspdf, doc=new jsPDF();
-  const bulan=document.getElementById('filter-bulan-kas').options[document.getElementById('filter-bulan-kas').selectedIndex].text;
-  const tahun=document.getElementById('filter-tahun-kas').value;
-  doc.setFontSize(16); doc.text(`Laporan Kas RT — ${bulan} ${tahun}`,14,20);
+  const now = new Date();
+  const label = now.toLocaleDateString('id-ID', {month:'long', year:'numeric'});
+  doc.setFontSize(16); doc.text(`Laporan Kas RT — Semua Periode`,14,20);
   doc.setFontSize(11); let y=35;
   doc.text('Tanggal',14,y); doc.text('Keterangan',50,y); doc.text('Jenis',120,y); doc.text('Nominal',155,y);
   y+=6; doc.line(14,y,196,y); y+=4;
   allKasData.forEach(k=>{ if(y>270){doc.addPage();y=20;} doc.text(fmtDate(k.tanggal),14,y); doc.text(k.keterangan.substring(0,35),50,y); doc.text(k.jenis,120,y); doc.text(rp(k.nominal),155,y); y+=7; });
-  doc.save(`laporan-kas-rt-${bulan}-${tahun}.pdf`); showToast('PDF berhasil diunduh!');
+  doc.save(`laporan-kas-rt-semua.pdf`); showToast('PDF berhasil diunduh!');
 }
 function exportKasExcel() {
-  const bulan=document.getElementById('filter-bulan-kas').options[document.getElementById('filter-bulan-kas').selectedIndex].text;
-  const tahun=document.getElementById('filter-tahun-kas').value;
   const rows=allKasData.map(k=>({Tanggal:fmtDate(k.tanggal),Keterangan:k.keterangan,Kategori:k.kategori,Jenis:k.jenis,Nominal:k.nominal}));
   const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Kas RT'); XLSX.writeFile(wb,`laporan-kas-rt-${bulan}-${tahun}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,ws,'Kas RT'); XLSX.writeFile(wb,`laporan-kas-rt-semua.xlsx`);
   showToast('Excel berhasil diunduh!');
 }
 
@@ -904,6 +961,17 @@ async function clearLog() {
   await db.from('log_aktivitas').delete().neq('id','00000000-0000-0000-0000-000000000000');
   showToast('Log dihapus!'); loadLog();
 }
+
+// ============================================================
+// INIT — restore session saat halaman pertama kali dibuka
+// ============================================================
+(async function init() {
+  const restored = await restoreSession();
+  if (restored) {
+    startApp();
+  }
+  // Jika tidak ada session, halaman login sudah tampil by default
+})();
 </script>
 
 </body>
