@@ -137,3 +137,13 @@ async function deleteKegiatan(id) {
   showToast('Kegiatan dihapus!');
   loadKegiatan();
 }
+
+// Expose ke global
+window.loadPengumuman    = loadPengumuman;
+window.showModalPengumuman = showModalPengumuman;
+window.savePengumuman    = savePengumuman;
+window.deletePengumuman  = deletePengumuman;
+window.loadKegiatan      = loadKegiatan;
+window.showModalKegiatan = showModalKegiatan;
+window.saveKegiatan      = saveKegiatan;
+window.deleteKegiatan    = deleteKegiatan;

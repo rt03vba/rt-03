@@ -74,3 +74,7 @@ function buildKasChart(data) {
     }
   });
 }
+
+// Expose ke global
+window.loadDashboard = loadDashboard;
+window.buildKasChart = buildKasChart;

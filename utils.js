@@ -96,3 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
     o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); });
   });
 });
+
+// Expose ke global
+window.rp               = rp;
+window.fmtDate          = fmtDate;
+window.showToast        = showToast;
+window.closeModal       = closeModal;
+window.openModal        = openModal;
+window.logAktivitas     = logAktivitas;
+window.initFilterBulanTahun = initFilterBulanTahun;
+window.navigateTo       = navigateTo;

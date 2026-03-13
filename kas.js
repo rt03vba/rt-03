@@ -200,3 +200,13 @@ function exportKasExcel() {
   XLSX.writeFile(wb, `laporan-kas-rt-${bulan}-${tahun}.xlsx`);
   showToast('Excel berhasil diunduh!');
 }
+
+// Expose ke global
+window.loadKas         = loadKas;
+window.renderKas       = renderKas;
+window.showModalKas    = showModalKas;
+window.showModalEditKas = showModalEditKas;
+window.saveKas         = saveKas;
+window.deleteKas       = deleteKas;
+window.exportKasPDF    = exportKasPDF;
+window.exportKasExcel  = exportKasExcel;

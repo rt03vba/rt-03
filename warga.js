@@ -189,3 +189,14 @@ async function deleteWarga(id) {
   logAktivitas('Hapus Warga', id);
   loadWarga();
 }
+
+// Expose ke global
+window.loadWarga          = loadWarga;
+window.renderWarga        = renderWarga;
+window.setFilterBlok      = setFilterBlok;
+window.filterWarga        = filterWarga;
+window.showRiwayatWarga   = showRiwayatWarga;
+window.showModalTambahWarga = showModalTambahWarga;
+window.showModalEditWarga = showModalEditWarga;
+window.saveWarga          = saveWarga;
+window.deleteWarga        = deleteWarga;

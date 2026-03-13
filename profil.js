@@ -75,3 +75,8 @@ async function clearLog() {
   showToast('Log dihapus!');
   loadLog();
 }
+
+// Expose ke global
+window.loadProfil = loadProfil;
+window.loadLog    = loadLog;
+window.clearLog   = clearLog;

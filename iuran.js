@@ -150,3 +150,11 @@ async function generateIuranBulanan() {
   loadIuran();
   loadDashboard();
 }
+
+// Expose ke global
+window.loadIuran            = loadIuran;
+window.renderIuran          = renderIuran;
+window.filterIuran          = filterIuran;
+window.showModalIuran       = showModalIuran;
+window.saveIuran            = saveIuran;
+window.generateIuranBulanan = generateIuranBulanan;

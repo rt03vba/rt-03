@@ -50,6 +50,12 @@ function logout() {
   document.getElementById('warga-pass').value = '';
 }
 
+// Expose ke global scope (diperlukan saat JS di-load sebagai file terpisah)
+window.switchLoginTab = switchLoginTab;
+window.loginAdmin     = loginAdmin;
+window.loginWarga     = loginWarga;
+window.logout         = logout;
+
 /** Mulai aplikasi setelah login berhasil */
 function startApp() {
   document.getElementById('login-screen').style.display = 'none';
@@ -87,3 +93,5 @@ function startApp() {
   loadKas();
   loadProfil();
 }
+
+window.startApp = startApp;
