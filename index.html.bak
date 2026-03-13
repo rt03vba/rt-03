@@ -1,225 +1,29 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aplikasi RT - Manajemen Warga</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-  :root {
-    --primary: #1976D2;
-    --primary-dark: #1565C0;
-    --primary-light: #E3F2FD;
-    --secondary: #43A047;
-    --danger: #E53935;
-    --warning: #FB8C00;
-    --surface: #FFFFFF;
-    --bg: #F5F7FA;
-    --text: #1A1A2E;
-    --text-muted: #757575;
-    --border: #E0E0E0;
-    --shadow: 0 2px 12px rgba(0,0,0,0.10);
-    --radius: 14px;
-    --radius-sm: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-  body { background: var(--bg); color: var(--text); min-height: 100vh; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RT Smart App - Manajemen Warga</title>
 
-  /* LOGIN */
-  #login-screen {
-    min-height: 100vh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #1565C0 0%, #1976D2 50%, #42A5F5 100%);
-    animation: fadeIn .5s ease;
-  }
-  .login-card {
-    background: white; border-radius: 24px; padding: 40px 32px;
-    width: 90%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    animation: slideUp .4s ease;
-  }
-  .login-logo { text-align: center; margin-bottom: 24px; }
-  .login-logo .logo-circle {
-    width: 72px; height: 72px; border-radius: 50%;
-    background: linear-gradient(135deg, #1976D2, #42A5F5);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 12px; font-size: 32px;
-    box-shadow: 0 4px 20px rgba(25,118,210,0.4);
-  }
-  .login-logo h2 { font-size: 22px; font-weight: 700; color: #1A1A2E; }
-  .login-logo p { font-size: 13px; color: #757575; margin-top: 4px; }
-  .login-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: #F5F7FA; padding: 4px; border-radius: 10px; }
-  .login-tab {
-    flex: 1; padding: 8px; border: none; background: transparent; border-radius: 8px;
-    font-size: 14px; cursor: pointer; transition: all .2s; color: #757575; font-weight: 500;
-  }
-  .login-tab.active { background: white; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; font-size: 13px; font-weight: 600; color: #424242; margin-bottom: 6px; }
-  .form-group input, .form-group select, .form-group textarea {
-    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm); font-size: 14px; transition: border .2s;
-    background: white; color: var(--text);
-  }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(25,118,210,0.1);
-  }
-  .btn {
-    width: 100%; padding: 13px; border: none; border-radius: var(--radius-sm);
-    font-size: 15px; font-weight: 600; cursor: pointer; transition: all .2s;
-  }
-  .btn-primary { background: var(--primary); color: white; }
-  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(25,118,210,0.3); }
-  .btn-sm { width: auto; padding: 7px 14px; font-size: 13px; }
-  .btn-success { background: var(--secondary); color: white; }
-  .btn-danger { background: var(--danger); color: white; }
-  .btn-warning { background: var(--warning); color: white; }
-  .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
-  .btn:active { transform: scale(0.97); }
+  <!-- Vendor -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  /* MAIN APP */
-  #app { display: none; flex-direction: column; min-height: 100vh; }
-  .top-bar {
-    background: white; padding: 14px 16px; display: flex; align-items: center;
-    justify-content: space-between; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100;
-  }
-  .top-bar-left { display: flex; align-items: center; gap: 10px; }
-  .top-bar-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .top-bar-title { font-size: 16px; font-weight: 700; color: var(--text); }
-  .top-bar-subtitle { font-size: 11px; color: var(--text-muted); }
-  .top-bar-right { display: flex; align-items: center; gap: 10px; }
-  .user-badge { background: var(--primary-light); color: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-  .logout-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--danger); font-weight: 600; }
-
-  /* BOTTOM NAV */
-  .bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0; background: white;
-    display: flex; box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-    z-index: 100; padding-bottom: env(safe-area-inset-bottom);
-  }
-  .nav-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 8px 4px; cursor: pointer; transition: all .2s; border: none; background: none;
-    color: var(--text-muted); font-size: 10px; font-weight: 500;
-    position: relative;
-  }
-  .nav-item.active { color: var(--primary); }
-  .nav-item.active::after {
-    content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
-    height: 3px; background: var(--primary); border-radius: 3px 3px 0 0;
-  }
-  .nav-icon { font-size: 22px; margin-bottom: 2px; }
-  .main-content { flex: 1; padding: 16px; padding-bottom: 80px; }
-
-  /* CARDS */
-  .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; animation: fadeIn .3s ease; }
-  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .card-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-  .stat-card {
-    background: white; border-radius: var(--radius); padding: 16px;
-    box-shadow: var(--shadow); text-align: center; animation: fadeIn .4s ease;
-    border-top: 3px solid var(--primary);
-  }
-  .stat-card.green { border-top-color: var(--secondary); }
-  .stat-card.orange { border-top-color: var(--warning); }
-  .stat-card.red { border-top-color: var(--danger); }
-  .stat-value { font-size: 22px; font-weight: 800; color: var(--primary); }
-  .stat-card.green .stat-value { color: var(--secondary); }
-  .stat-card.orange .stat-value { color: var(--warning); }
-  .stat-card.red .stat-value { color: var(--danger); }
-  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
-
-  /* TABLE */
-  .table-wrap { overflow-x: auto; border-radius: var(--radius-sm); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead { background: var(--primary-light); }
-  th { padding: 10px 12px; text-align: left; font-weight: 700; font-size: 12px; color: var(--primary); white-space: nowrap; }
-  td { padding: 10px 12px; border-bottom: 1px solid #F0F0F0; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #F9F9F9; }
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-  }
-  .badge-success { background: #E8F5E9; color: #2E7D32; }
-  .badge-danger { background: #FFEBEE; color: #C62828; }
-  .badge-warning { background: #FFF8E1; color: #F57F17; }
-  .badge-info { background: #E3F2FD; color: #1565C0; }
-
-  /* SEARCH & FILTER */
-  .search-bar { position: relative; margin-bottom: 12px; }
-  .search-bar input { width: 100%; padding: 11px 14px 11px 40px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; }
-  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #999; font-size: 16px; }
-  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .filter-chip {
-    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    background: white; border: 1.5px solid var(--border); cursor: pointer; transition: all .2s; color: var(--text-muted);
-  }
-  .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-  /* POPUP / MODAL */
-  .overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    z-index: 200; align-items: center; justify-content: center; padding: 16px;
-    animation: fadeIn .2s ease;
-  }
-  .overlay.show { display: flex; }
-  .modal {
-    background: white; border-radius: 20px; padding: 24px; width: 100%;
-    max-width: 480px; max-height: 90vh; overflow-y: auto;
-    animation: slideUp .3s ease; box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-  }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-  .modal-title { font-size: 17px; font-weight: 700; }
-  .modal-close { background: #F5F5F5; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-
-  /* TOAST */
-  #toast-container { position: fixed; top: 20px; right: 16px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
-  .toast {
-    padding: 12px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: slideDown .3s ease;
-    display: flex; align-items: center; gap: 8px; max-width: 320px;
-  }
-  .toast-success { background: #2E7D32; color: white; }
-  .toast-error { background: #C62828; color: white; }
-  .toast-info { background: var(--primary); color: white; }
-
-  /* ANIMATIONS */
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-
-  /* MISC */
-  .divider { height: 1px; background: var(--border); margin: 16px 0; }
-  .text-center { text-align: center; }
-  .mt-8 { margin-top: 8px; }
-  .mt-16 { margin-top: 16px; }
-  .flex-row { display: flex; gap: 8px; }
-  .page { display: none; }
-  .page.active { display: block; animation: fadeIn .3s ease; }
-  .loading { text-align: center; padding: 40px; color: var(--text-muted); }
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
-  .click-name { color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline dotted; }
-  .warga-row-clickable { cursor: pointer; }
-  .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-
-  @media (max-width: 480px) {
-    .stat-value { font-size: 18px; }
-    .main-content { padding: 12px; }
-    .card { padding: 16px; }
-    .modal { padding: 20px; }
-  }
-</style>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- TOAST CONTAINER -->
+<!-- ============================================
+     TOAST
+     ============================================ -->
 <div id="toast-container"></div>
 
-<!-- ======================== LOGIN SCREEN ======================== -->
+<!-- ============================================
+     LOGIN SCREEN
+     ============================================ -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
@@ -227,10 +31,13 @@
       <h2>RT Smart App</h2>
       <p>Sistem Manajemen Warga RT</p>
     </div>
+
     <div class="login-tabs">
       <button class="login-tab active" onclick="switchLoginTab('admin')">👮 Admin</button>
       <button class="login-tab" onclick="switchLoginTab('warga')">👤 Warga</button>
     </div>
+
+    <!-- Form Admin -->
     <div id="login-form-admin">
       <div class="form-group">
         <label>Kode Admin</label>
@@ -238,6 +45,8 @@
       </div>
       <button class="btn btn-primary" onclick="loginAdmin()">🔐 Masuk sebagai Admin</button>
     </div>
+
+    <!-- Form Warga -->
     <div id="login-form-warga" style="display:none">
       <div class="form-group">
         <label>Nomor Rumah / Blok</label>
@@ -249,12 +58,14 @@
       </div>
       <button class="btn btn-primary" onclick="loginWarga()">🏠 Masuk sebagai Warga</button>
     </div>
-    <p class="text-center mt-16" style="font-size:12px;color:#bbb;">Admin: ___ | Warga: password default 12</p>
   </div>
 </div>
 
-<!-- ======================== MAIN APP ======================== -->
+<!-- ============================================
+     MAIN APP
+     ============================================ -->
 <div id="app">
+
   <!-- TOP BAR -->
   <div class="top-bar">
     <div class="top-bar-left">
@@ -273,7 +84,7 @@
   <!-- MAIN CONTENT -->
   <div class="main-content">
 
-    <!-- PAGE: DASHBOARD -->
+    <!-- ==================== DASHBOARD ==================== -->
     <div id="page-dashboard" class="page active">
       <div class="stat-grid">
         <div class="stat-card">
@@ -294,7 +105,6 @@
         </div>
       </div>
 
-      <!-- CHART KAS -->
       <div class="card">
         <div class="card-header">
           <span class="card-title">📈 Grafik Kas 6 Bulan</span>
@@ -302,30 +112,24 @@
         <canvas id="kasChart" height="200"></canvas>
       </div>
 
-      <!-- PENGUMUMAN -->
       <div class="card">
         <div class="card-header">
           <span class="card-title">📢 Pengumuman</span>
           <button class="btn btn-primary btn-sm" id="btn-add-pengumuman" style="display:none" onclick="showModalPengumuman()">+ Tambah</button>
         </div>
-        <div id="list-pengumuman">
-          <div class="loading">Memuat...</div>
-        </div>
+        <div id="list-pengumuman"><div class="loading">Memuat...</div></div>
       </div>
 
-      <!-- KEGIATAN -->
       <div class="card">
         <div class="card-header">
           <span class="card-title">📅 Kegiatan Mendatang</span>
           <button class="btn btn-primary btn-sm" id="btn-add-kegiatan" style="display:none" onclick="showModalKegiatan()">+ Tambah</button>
         </div>
-        <div id="list-kegiatan">
-          <div class="loading">Memuat...</div>
-        </div>
+        <div id="list-kegiatan"><div class="loading">Memuat...</div></div>
       </div>
     </div>
 
-    <!-- PAGE: WARGA -->
+    <!-- ==================== WARGA ==================== -->
     <div id="page-warga" class="page">
       <div class="card">
         <div class="card-header">
@@ -359,7 +163,7 @@
       </div>
     </div>
 
-    <!-- PAGE: IURAN -->
+    <!-- ==================== IURAN ==================== -->
     <div id="page-iuran" class="page">
       <div class="card">
         <div class="card-header">
@@ -367,10 +171,8 @@
           <button class="btn btn-primary btn-sm" id="btn-generate-iuran" onclick="generateIuranBulanan()" style="display:none">⚡ Generate</button>
         </div>
         <div class="flex-row" style="margin-bottom:12px;">
-          <select id="filter-bulan-iuran" onchange="loadIuran()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
-          </select>
-          <select id="filter-tahun-iuran" onchange="loadIuran()" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
-          </select>
+          <select id="filter-bulan-iuran" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
+          <select id="filter-tahun-iuran" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
         </div>
         <div class="search-bar">
           <span class="search-icon">🔍</span>
@@ -389,8 +191,9 @@
       </div>
     </div>
 
-    <!-- PAGE: KAS -->
+    <!-- ==================== KAS RT ==================== -->
     <div id="page-kas" class="page">
+      <!-- Summary Stats -->
       <div class="stat-grid" style="grid-template-columns: repeat(3,1fr);">
         <div class="stat-card green">
           <div class="stat-value" id="kas-masuk-total">-</div>
@@ -405,24 +208,40 @@
           <div class="stat-label">💰 Saldo</div>
         </div>
       </div>
+
       <div class="card">
         <div class="card-header">
           <span class="card-title">📋 Riwayat Kas</span>
           <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
         </div>
-        <div class="flex-row" style="margin-bottom:12px">
-          <select id="filter-kas-jenis" onchange="loadKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+
+        <!-- Filter Bulan & Tahun (NEW) -->
+        <div class="kas-filter-row">
+          <select id="filter-bulan-kas" style="flex:1;"></select>
+          <select id="filter-tahun-kas" style="width:90px;"></select>
+          <select id="filter-kas-jenis" onchange="loadKas()" style="flex:1;">
             <option value="">Semua Transaksi</option>
             <option value="masuk">Kas Masuk</option>
             <option value="keluar">Kas Keluar</option>
           </select>
+        </div>
+
+        <!-- Export -->
+        <div class="flex-row" style="margin-bottom:12px;">
           <button class="btn btn-outline btn-sm" onclick="exportKasPDF()">📄 PDF</button>
           <button class="btn btn-outline btn-sm" onclick="exportKasExcel()">📊 Excel</button>
         </div>
+
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th>Nominal</th><th id="th-kas-aksi" style="display:none">Aksi</th></tr>
+              <tr>
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+                <th>Jenis</th>
+                <th>Nominal</th>
+                <th id="th-kas-aksi" style="display:none">Aksi</th>
+              </tr>
             </thead>
             <tbody id="tabel-kas">
               <tr><td colspan="5" class="loading">Memuat...</td></tr>
@@ -432,7 +251,7 @@
       </div>
     </div>
 
-    <!-- PAGE: PROFIL / LOG -->
+    <!-- ==================== PROFIL ==================== -->
     <div id="page-profil" class="page">
       <div class="card">
         <div class="card-title" style="margin-bottom:16px;">👤 Informasi Akun</div>
@@ -447,7 +266,7 @@
       </div>
     </div>
 
-  </div><!-- end main-content -->
+  </div><!-- /main-content -->
 
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
@@ -469,9 +288,11 @@
   </nav>
 </div>
 
-<!-- ======================== MODALS ======================== -->
+<!-- ============================================
+     MODALS
+     ============================================ -->
 
-<!-- MODAL RIWAYAT WARGA -->
+<!-- Modal: Riwayat Warga -->
 <div class="overlay" id="modal-riwayat">
   <div class="modal">
     <div class="modal-header">
@@ -482,7 +303,7 @@
   </div>
 </div>
 
-<!-- MODAL TAMBAH/EDIT WARGA -->
+<!-- Modal: Tambah / Edit Warga -->
 <div class="overlay" id="modal-warga">
   <div class="modal">
     <div class="modal-header">
@@ -509,7 +330,7 @@
   </div>
 </div>
 
-<!-- MODAL IURAN -->
+<!-- Modal: Update Status Iuran -->
 <div class="overlay" id="modal-iuran">
   <div class="modal">
     <div class="modal-header">
@@ -519,7 +340,10 @@
     <div style="font-size:15px;font-weight:600;margin-bottom:16px;" id="modal-iuran-nama"></div>
     <form id="form-iuran" onsubmit="saveIuran(event)">
       <div class="form-group"><label>Status</label>
-        <select id="i-status"><option value="lunas">✅ Lunas</option><option value="belum">❌ Belum Bayar</option></select>
+        <select id="i-status">
+          <option value="lunas">✅ Lunas</option>
+          <option value="belum">❌ Belum Bayar</option>
+        </select>
       </div>
       <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="i-nominal" value="50000" min="0"></div>
       <div class="form-group"><label>Tanggal Bayar</label><input type="date" id="i-tglbayar"></div>
@@ -534,7 +358,7 @@
   </div>
 </div>
 
-<!-- MODAL KAS -->
+<!-- Modal: Tambah / Edit Kas -->
 <div class="overlay" id="modal-kas">
   <div class="modal">
     <div class="modal-header">
@@ -544,7 +368,10 @@
     <form id="form-kas" onsubmit="saveKas(event)">
       <div class="form-group"><label>Tanggal *</label><input type="date" id="k-tanggal" required></div>
       <div class="form-group"><label>Jenis *</label>
-        <select id="k-jenis"><option value="masuk">📥 Kas Masuk</option><option value="keluar">📤 Kas Keluar</option></select>
+        <select id="k-jenis">
+          <option value="masuk">📥 Kas Masuk</option>
+          <option value="keluar">📤 Kas Keluar</option>
+        </select>
       </div>
       <div class="form-group"><label>Nominal (Rp) *</label><input type="number" id="k-nominal" min="0" required></div>
       <div class="form-group"><label>Keterangan *</label><input type="text" id="k-ket" required></div>
@@ -566,7 +393,7 @@
   </div>
 </div>
 
-<!-- MODAL PENGUMUMAN -->
+<!-- Modal: Pengumuman -->
 <div class="overlay" id="modal-pengumuman">
   <div class="modal">
     <div class="modal-header">
@@ -577,7 +404,11 @@
       <div class="form-group"><label>Judul *</label><input type="text" id="p-judul" required></div>
       <div class="form-group"><label>Isi *</label><textarea id="p-isi" rows="4" required style="resize:vertical"></textarea></div>
       <div class="form-group"><label>Prioritas</label>
-        <select id="p-prioritas"><option value="normal">Normal</option><option value="penting">Penting</option><option value="urgent">Urgent</option></select>
+        <select id="p-prioritas">
+          <option value="normal">Normal</option>
+          <option value="penting">Penting</option>
+          <option value="urgent">Urgent</option>
+        </select>
       </div>
       <input type="hidden" id="p-id">
       <div class="flex-row">
@@ -588,7 +419,7 @@
   </div>
 </div>
 
-<!-- MODAL KEGIATAN -->
+<!-- Modal: Kegiatan -->
 <div class="overlay" id="modal-kegiatan">
   <div class="modal">
     <div class="modal-header">
@@ -610,663 +441,18 @@
   </div>
 </div>
 
-<script>
-// ========== KONFIGURASI SUPABASE ==========
-const SUPABASE_URL = 'https://oimhuaiylljjwzkzftdz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pbWh1YWl5bGxqand6a3pmdGR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTg3NzEsImV4cCI6MjA4ODk3NDc3MX0.8qYLtTt9LKO5Gem606rf2fyag8USQgo4u_vTzegmf-g';
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+<!-- ============================================
+     SCRIPTS — urutan penting!
+     ============================================ -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/pengumuman.js"></script>
+<script src="js/warga.js"></script>
+<script src="js/iuran.js"></script>
+<script src="js/kas.js"></script>
+<script src="js/profil.js"></script>
 
-// ========== STATE ==========
-let currentUser = null; // 'admin' or warga object
-let allWarga = [];
-let allIuranData = [];
-let allKasData = [];
-let filterBlokAktif = '';
-let editWargaId = null;
-let editKasId = null;
-let kasChartInstance = null;
-
-// ========== HELPERS ==========
-function rp(n) {
-  if (!n && n !== 0) return '-';
-  return 'Rp ' + Number(n).toLocaleString('id-ID');
-}
-function fmtDate(d) {
-  if (!d) return '-';
-  return new Date(d).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-}
-function showToast(msg, type = 'success') {
-  const el = document.createElement('div');
-  el.className = `toast toast-${type}`;
-  el.innerHTML = (type==='success'?'✅':type==='error'?'❌':'ℹ️') + ' ' + msg;
-  document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
-}
-function openModal(id) {
-  document.getElementById(id).classList.add('show');
-}
-async function logAktivitas(aksi, detail = '') {
-  try { await db.from('log_aktivitas').insert({ aksi, detail, user_type: currentUser === 'admin' ? 'admin' : 'warga' }); } catch(e) {}
-}
-
-// ========== LOGIN ==========
-function switchLoginTab(tab) {
-  document.querySelectorAll('.login-tab').forEach((t,i) => t.classList.toggle('active', (i===0 && tab==='admin') || (i===1 && tab==='warga')));
-  document.getElementById('login-form-admin').style.display = tab === 'admin' ? 'block' : 'none';
-  document.getElementById('login-form-warga').style.display = tab === 'warga' ? 'block' : 'none';
-}
-function loginAdmin() {
-  const pass = document.getElementById('admin-pass').value.trim();
-  if (pass !== '111') { showToast('Kode admin salah!', 'error'); return; }
-  currentUser = 'admin';
-  startApp();
-}
-async function loginWarga() {
-  const blokInput = document.getElementById('warga-blok').value.trim().toUpperCase();
-  const pass = document.getElementById('warga-pass').value.trim();
-  const [blok, nomor] = blokInput.includes('-') ? blokInput.split('-') : [blokInput, ''];
-  if (!blok) { showToast('Masukkan blok rumah!', 'error'); return; }
-  const { data, error } = await db.from('warga').select('*').ilike('blok', blok).ilike('nomor_rumah', nomor || '%');
-  if (error || !data || data.length === 0) { showToast('Data warga tidak ditemukan!', 'error'); return; }
-  const warga = data.find(w => w.password === pass);
-  if (!warga) { showToast('Password salah!', 'error'); return; }
-  currentUser = warga;
-  startApp();
-}
-function logout() {
-  currentUser = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('admin-pass').value = '';
-  document.getElementById('warga-blok').value = '';
-  document.getElementById('warga-pass').value = '';
-}
-
-// ========== APP START ==========
-function startApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  const isAdmin = currentUser === 'admin';
-  document.getElementById('user-badge').textContent = isAdmin ? '👮 Admin' : ('🏠 ' + (currentUser.blok + '-' + currentUser.nomor_rumah));
-
-  // Tampilkan fitur admin only
-  const adminEls = ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-tambah-kas'];
-  adminEls.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = isAdmin ? 'block' : 'none'; });
-  document.getElementById('log-card').style.display = isAdmin ? 'block' : 'none';
-  if (document.getElementById('th-nik')) document.getElementById('th-nik').style.display = isAdmin ? '' : 'none';
-  if (document.getElementById('th-kas-aksi')) document.getElementById('th-kas-aksi').style.display = isAdmin ? '' : 'none';
-
-  initFilters();
-  loadDashboard();
-  loadWarga();
-  loadIuran();
-  loadKas();
-  loadProfil();
-}
-
-// ========== NAVIGATE ==========
-function navigateTo(page, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  btn.classList.add('active');
-  const titles = { dashboard: 'Dashboard', warga: 'Daftar Warga', iuran: 'Iuran Warga', kas: 'Kas RT', profil: 'Profil' };
-  document.getElementById('current-page-title').textContent = titles[page] || page;
-  if (page === 'warga') loadWarga();
-  if (page === 'iuran') loadIuran();
-  if (page === 'kas') loadKas();
-  if (page === 'profil') loadProfil();
-}
-
-// ========== INIT FILTERS ==========
-function initFilters() {
-  const now = new Date();
-  const selBulan = document.getElementById('filter-bulan-iuran');
-  const selTahun = document.getElementById('filter-tahun-iuran');
-  const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  selBulan.innerHTML = bulanNama.map((n,i) => `<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${n}</option>`).join('');
-  for (let y = now.getFullYear(); y >= now.getFullYear()-3; y--) {
-    selTahun.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
-  }
-}
-
-// ========== DASHBOARD ==========
-async function loadDashboard() {
-  const now = new Date();
-  const bln = now.getMonth() + 1;
-  const thn = now.getFullYear();
-  const [resW, resI, resK] = await Promise.all([
-    db.from('warga').select('id', { count: 'exact' }),
-    db.from('iuran').select('*').eq('bulan', bln).eq('tahun', thn),
-    db.from('kas').select('*')
-  ]);
-  const totalWarga = resW.count || 0;
-  document.getElementById('stat-warga').textContent = totalWarga;
-  const iuranBulan = resI.data || [];
-  const lunas = iuranBulan.filter(i => i.status === 'lunas').length;
-  const belum = totalWarga - lunas;
-  document.getElementById('stat-lunas').textContent = lunas;
-  document.getElementById('stat-belum').textContent = belum < 0 ? 0 : belum;
-  const kasData = resK.data || [];
-  const totalMasuk = kasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
-  const totalKeluar = kasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
-  document.getElementById('stat-saldo').textContent = rp(totalMasuk - totalKeluar);
-  buildKasChart(kasData);
-  loadPengumuman();
-  loadKegiatan();
-}
-function buildKasChart(data) {
-  const now = new Date();
-  const labels = [], masukArr = [], keluarArr = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const lbl = d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
-    labels.push(lbl);
-    const m = d.getMonth() + 1; const y = d.getFullYear();
-    const masuk = data.filter(k => k.jenis==='masuk' && new Date(k.tanggal).getMonth()+1===m && new Date(k.tanggal).getFullYear()===y).reduce((s,k)=>s+k.nominal,0);
-    const keluar = data.filter(k => k.jenis==='keluar' && new Date(k.tanggal).getMonth()+1===m && new Date(k.tanggal).getFullYear()===y).reduce((s,k)=>s+k.nominal,0);
-    masukArr.push(masuk); keluarArr.push(keluar);
-  }
-  if (kasChartInstance) kasChartInstance.destroy();
-  kasChartInstance = new Chart(document.getElementById('kasChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Kas Masuk', data: masukArr, backgroundColor: 'rgba(67,160,71,0.7)', borderRadius: 6 },
-        { label: 'Kas Keluar', data: keluarArr, backgroundColor: 'rgba(229,57,53,0.7)', borderRadius: 6 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } },
-      scales: { y: { ticks: { callback: v => 'Rp ' + (v/1000).toFixed(0) + 'k' } } }
-    }
-  });
-}
-async function loadPengumuman() {
-  const { data } = await db.from('pengumuman').select('*').eq('aktif', true).order('created_at', { ascending: false }).limit(5);
-  const el = document.getElementById('list-pengumuman');
-  if (!data || data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>Belum ada pengumuman</div></div>'; return; }
-  const priColor = { normal: 'badge-info', penting: 'badge-warning', urgent: 'badge-danger' };
-  el.innerHTML = data.map(p => `
-    <div style="padding:12px 0;border-bottom:1px solid #F0F0F0;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span class="badge ${priColor[p.prioritas]||'badge-info'}">${p.prioritas.toUpperCase()}</span>
-        <span style="font-weight:700;font-size:14px;">${p.judul}</span>
-        ${currentUser==='admin'?`<button onclick="deletePengumuman('${p.id}')" style="margin-left:auto;background:none;border:none;color:#E53935;cursor:pointer;font-size:12px;">🗑️</button>`:''}
-      </div>
-      <div style="font-size:13px;color:#555;line-height:1.5;">${p.isi}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;">${fmtDate(p.created_at)}</div>
-    </div>`).join('');
-}
-async function loadKegiatan() {
-  const today = new Date().toISOString().slice(0,10);
-  const { data } = await db.from('kegiatan').select('*').gte('tanggal', today).order('tanggal').limit(5);
-  const el = document.getElementById('list-kegiatan');
-  if (!data || data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div>Belum ada kegiatan</div></div>'; return; }
-  el.innerHTML = data.map(k => `
-    <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #F0F0F0;align-items:center;">
-      <div style="background:var(--primary-light);color:var(--primary);padding:8px 10px;border-radius:10px;text-align:center;min-width:48px;">
-        <div style="font-size:16px;font-weight:800;">${new Date(k.tanggal).getDate()}</div>
-        <div style="font-size:10px;">${new Date(k.tanggal).toLocaleDateString('id-ID',{month:'short'})}</div>
-      </div>
-      <div style="flex:1;">
-        <div style="font-weight:700;font-size:14px;">${k.nama}</div>
-        <div style="font-size:12px;color:#777;">${k.waktu||''} ${k.lokasi?'· '+k.lokasi:''}</div>
-      </div>
-      ${currentUser==='admin'?`<button onclick="deleteKegiatan('${k.id}')" style="background:none;border:none;color:#E53935;cursor:pointer;">🗑️</button>`:''}
-    </div>`).join('');
-}
-
-// ========== WARGA ==========
-async function loadWarga() {
-  const isAdmin = currentUser === 'admin';
-  let query = db.from('warga').select('*').order('blok').order('nomor_rumah');
-  if (!isAdmin) query = query.eq('id', currentUser.id);
-  const { data, error } = await query;
-  if (error) { showToast('Gagal memuat data warga', 'error'); return; }
-  allWarga = data || [];
-  // Build blok filters
-  if (isAdmin) {
-    const bloks = [...new Set(allWarga.map(w => w.blok))].sort();
-    const fc = document.getElementById('filter-blok');
-    fc.innerHTML = `<button class="filter-chip ${filterBlokAktif===''?'active':''}" onclick="setFilterBlok('', this)">Semua</button>`;
-    bloks.forEach(b => {
-      const btn = document.createElement('button');
-      btn.className = `filter-chip ${filterBlokAktif===b?'active':''}`;
-      btn.textContent = 'Blok ' + b;
-      btn.onclick = () => setFilterBlok(b, btn);
-      fc.appendChild(btn);
-    });
-  }
-  renderWarga(allWarga);
-}
-function renderWarga(data) {
-  const isAdmin = currentUser === 'admin';
-  const tbody = document.getElementById('tabel-warga');
-  if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div>Tidak ada warga</div></td></tr>'; return; }
-  tbody.innerHTML = data.map(w => `
-    <tr class="warga-row-clickable" onclick="showRiwayatWarga('${w.id}', '${w.nama_kk}')">
-      <td><b>Blok ${w.blok}-${w.nomor_rumah}</b></td>
-      <td><span class="click-name">${w.nama_kk}</span></td>
-      ${isAdmin ? `<td style="font-size:11px;color:#999;">${w.nik}</td>` : ''}
-      <td><span class="badge ${w.status_hunian==='pribadi'?'badge-success':'badge-warning'}">${w.status_hunian}</span></td>
-      <td style="text-align:center;">${w.jumlah_anggota}</td>
-      <td onclick="event.stopPropagation()">
-        ${isAdmin ? `
-        <div class="flex-row">
-          <button class="btn btn-warning btn-sm" onclick="showModalEditWarga('${w.id}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteWarga('${w.id}')">🗑️</button>
-        </div>` : ''}
-      </td>
-    </tr>`).join('');
-}
-function setFilterBlok(blok, btn) {
-  filterBlokAktif = blok;
-  document.querySelectorAll('#filter-blok .filter-chip').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  filterWarga(document.getElementById('search-warga').value);
-}
-function filterWarga(q) {
-  let data = allWarga;
-  if (filterBlokAktif) data = data.filter(w => w.blok === filterBlokAktif);
-  if (q) {
-    const lq = q.toLowerCase();
-    data = data.filter(w => w.nama_kk.toLowerCase().includes(lq) || w.blok.toLowerCase().includes(lq) || (currentUser==='admin' && w.nik && w.nik.includes(lq)));
-  }
-  renderWarga(data);
-}
-
-// RIWAYAT WARGA
-async function showRiwayatWarga(wargaId, nama) {
-  openModal('modal-riwayat');
-  document.getElementById('modal-riwayat-nama').textContent = '📋 ' + nama;
-  const { data } = await db.from('iuran').select('*').eq('warga_id', wargaId).order('tahun').order('bulan');
-  const el = document.getElementById('modal-riwayat-content');
-  if (!data || data.length === 0) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">💳</div>Belum ada riwayat iuran</div>'; return; }
-  const bulanNama = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-  el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>Bulan</th><th>Tahun</th><th>Status</th><th>Bayar</th><th>Nominal</th></tr></thead>
-    <tbody>${data.map(i => `<tr>
-      <td>${bulanNama[i.bulan]}</td><td>${i.tahun}</td>
-      <td><span class="badge ${i.status==='lunas'?'badge-success':'badge-danger'}">${i.status}</span></td>
-      <td style="font-size:12px;">${fmtDate(i.tgl_bayar)}</td>
-      <td>${rp(i.nominal)}</td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
-}
-
-// ADD/EDIT WARGA
-function showModalTambahWarga() {
-  editWargaId = null;
-  document.getElementById('modal-warga-title').textContent = 'Tambah Warga';
-  document.getElementById('form-warga').reset();
-  document.getElementById('w-id').value = '';
-  document.getElementById('w-password').value = '123';
-  openModal('modal-warga');
-}
-function showModalEditWarga(id) {
-  const w = allWarga.find(w => w.id === id);
-  if (!w) return;
-  editWargaId = id;
-  document.getElementById('modal-warga-title').textContent = 'Edit Data Warga';
-  document.getElementById('w-id').value = id;
-  document.getElementById('w-nik').value = w.nik;
-  document.getElementById('w-nama').value = w.nama_kk;
-  document.getElementById('w-blok').value = w.blok;
-  document.getElementById('w-nomor').value = w.nomor_rumah;
-  document.getElementById('w-status').value = w.status_hunian;
-  document.getElementById('w-anggota').value = w.jumlah_anggota;
-  document.getElementById('w-hp').value = w.no_hp || '';
-  document.getElementById('w-password').value = w.password || '123';
-  openModal('modal-warga');
-}
-async function saveWarga(e) {
-  e.preventDefault();
-  const id = document.getElementById('w-id').value;
-  const nik = document.getElementById('w-nik').value.trim();
-  const payload = {
-    nik, nama_kk: document.getElementById('w-nama').value.trim(),
-    blok: document.getElementById('w-blok').value.trim().toUpperCase(),
-    nomor_rumah: document.getElementById('w-nomor').value.trim(),
-    status_hunian: document.getElementById('w-status').value,
-    jumlah_anggota: parseInt(document.getElementById('w-anggota').value) || 1,
-    no_hp: document.getElementById('w-hp').value.trim(),
-    password: document.getElementById('w-password').value.trim() || '123'
-  };
-  // Anti double check
-  const { data: existing } = await db.from('warga').select('id').eq('nik', nik).neq('id', id || '00000000-0000-0000-0000-000000000000');
-  if (existing && existing.length > 0) { showToast('NIK sudah terdaftar!', 'error'); return; }
-  let err;
-  if (id) {
-    const res = await db.from('warga').update(payload).eq('id', id);
-    err = res.error;
-  } else {
-    const res = await db.from('warga').insert(payload);
-    err = res.error;
-  }
-  if (err) { showToast('Gagal menyimpan: ' + err.message, 'error'); return; }
-  showToast(id ? 'Data warga diperbarui!' : 'Warga berhasil ditambahkan!');
-  closeModal('modal-warga');
-  document.getElementById('form-warga').reset();
-  logAktivitas(id ? 'Edit Warga' : 'Tambah Warga', payload.nama_kk);
-  loadWarga();
-}
-async function deleteWarga(id) {
-  if (!confirm('Hapus data warga ini?')) return;
-  const { error } = await db.from('warga').delete().eq('id', id);
-  if (error) { showToast('Gagal menghapus!', 'error'); return; }
-  showToast('Warga dihapus!');
-  logAktivitas('Hapus Warga', id);
-  loadWarga();
-}
-
-// ========== IURAN ==========
-async function loadIuran() {
-  const bulan = parseInt(document.getElementById('filter-bulan-iuran').value);
-  const tahun = parseInt(document.getElementById('filter-tahun-iuran').value);
-  const isAdmin = currentUser === 'admin';
-  let wargaQuery = db.from('warga').select('*').order('blok').order('nomor_rumah');
-  if (!isAdmin) wargaQuery = wargaQuery.eq('id', currentUser.id);
-  const [resW, resI] = await Promise.all([
-    wargaQuery,
-    db.from('iuran').select('*').eq('bulan', bulan).eq('tahun', tahun)
-  ]);
-  const wargaList = resW.data || [];
-  const iuranList = resI.data || [];
-  allIuranData = wargaList.map(w => ({
-    ...w,
-    iuran: iuranList.find(i => i.warga_id === w.id) || null
-  }));
-  renderIuran(allIuranData);
-}
-function renderIuran(data) {
-  const isAdmin = currentUser === 'admin';
-  const tbody = document.getElementById('tabel-iuran');
-  if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
-  tbody.innerHTML = data.map(item => `
-    <tr>
-      <td><b>Blok ${item.blok}-${item.nomor_rumah}</b></td>
-      <td>${item.nama_kk}</td>
-      <td>
-        ${item.iuran
-          ? `<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`
-          : `<span class="badge badge-warning">Belum input</span>`}
-      </td>
-      <td style="font-size:12px;">${item.iuran ? fmtDate(item.iuran.tgl_bayar) : '-'}</td>
-      <td>${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button>` : ''}</td>
-    </tr>`).join('');
-}
-function filterIuran(q) {
-  if (!q) { renderIuran(allIuranData); return; }
-  const lq = q.toLowerCase();
-  renderIuran(allIuranData.filter(w => w.nama_kk.toLowerCase().includes(lq) || w.blok.toLowerCase().includes(lq)));
-}
-function showModalIuran(wargaId, nama, iuranId) {
-  const item = allIuranData.find(w => w.id === wargaId);
-  document.getElementById('modal-iuran-nama').textContent = nama;
-  document.getElementById('i-warga-id').value = wargaId;
-  document.getElementById('i-id').value = iuranId || '';
-  if (item && item.iuran) {
-    document.getElementById('i-status').value = item.iuran.status;
-    document.getElementById('i-nominal').value = item.iuran.nominal || 50000;
-    document.getElementById('i-tglbayar').value = item.iuran.tgl_bayar ? item.iuran.tgl_bayar.slice(0,10) : '';
-    document.getElementById('i-ket').value = item.iuran.keterangan || '';
-  } else {
-    document.getElementById('form-iuran').reset();
-    document.getElementById('i-nominal').value = 50000;
-    document.getElementById('i-tglbayar').value = new Date().toISOString().slice(0,10);
-  }
-  openModal('modal-iuran');
-}
-async function saveIuran(e) {
-  e.preventDefault();
-  const iuranId = document.getElementById('i-id').value;
-  const wargaId = document.getElementById('i-warga-id').value;
-  const bulan = parseInt(document.getElementById('filter-bulan-iuran').value);
-  const tahun = parseInt(document.getElementById('filter-tahun-iuran').value);
-  const payload = {
-    warga_id: wargaId, bulan, tahun,
-    status: document.getElementById('i-status').value,
-    nominal: parseInt(document.getElementById('i-nominal').value) || 50000,
-    tgl_bayar: document.getElementById('i-tglbayar').value || null,
-    keterangan: document.getElementById('i-ket').value
-  };
-  let err;
-  if (iuranId) {
-    const r = await db.from('iuran').update(payload).eq('id', iuranId); err = r.error;
-  } else {
-    const r = await db.from('iuran').insert(payload); err = r.error;
-  }
-  if (err) { showToast('Gagal: ' + err.message, 'error'); return; }
-  showToast('Status iuran disimpan!');
-  closeModal('modal-iuran');
-  document.getElementById('form-iuran').reset();
-  logAktivitas('Update Iuran', wargaId);
-  loadIuran();
-  loadDashboard();
-}
-async function generateIuranBulanan() {
-  const bulan = parseInt(document.getElementById('filter-bulan-iuran').value);
-  const tahun = parseInt(document.getElementById('filter-tahun-iuran').value);
-  const { data: wargaList } = await db.from('warga').select('id');
-  const { data: existing } = await db.from('iuran').select('warga_id').eq('bulan', bulan).eq('tahun', tahun);
-  const existingIds = new Set((existing || []).map(i => i.warga_id));
-  const toInsert = (wargaList || []).filter(w => !existingIds.has(w.id)).map(w => ({ warga_id: w.id, bulan, tahun, status: 'belum', nominal: 50000 }));
-  if (toInsert.length === 0) { showToast('Semua warga sudah ada data iuran bulan ini', 'info'); return; }
-  const { error } = await db.from('iuran').insert(toInsert);
-  if (error) { showToast('Gagal generate: ' + error.message, 'error'); return; }
-  showToast(`Generate ${toInsert.length} data iuran berhasil!`);
-  loadIuran();
-}
-
-// ========== KAS ==========
-async function loadKas() {
-  const jenis = document.getElementById('filter-kas-jenis').value;
-  let query = db.from('kas').select('*').order('tanggal', { ascending: false });
-  if (jenis) query = query.eq('jenis', jenis);
-  const { data } = await query;
-  allKasData = data || [];
-  const totalMasuk = allKasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
-  const totalKeluar = allKasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
-  document.getElementById('kas-masuk-total').textContent = rp(totalMasuk);
-  document.getElementById('kas-keluar-total').textContent = rp(totalKeluar);
-  document.getElementById('kas-saldo').textContent = rp(totalMasuk - totalKeluar);
-  const isAdmin = currentUser === 'admin';
-  const tbody = document.getElementById('tabel-kas');
-  if (!allKasData.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Belum ada transaksi</div></td></tr>'; return; }
-  tbody.innerHTML = allKasData.map(k => `
-    <tr>
-      <td style="font-size:12px;white-space:nowrap;">${fmtDate(k.tanggal)}</td>
-      <td>${k.keterangan}<br><span style="font-size:11px;color:#aaa;">${k.kategori}</span></td>
-      <td><span class="badge ${k.jenis==='masuk'?'badge-success':'badge-danger'}">${k.jenis}</span></td>
-      <td style="white-space:nowrap;font-weight:600;color:${k.jenis==='masuk'?'#2E7D32':'#C62828'}">${rp(k.nominal)}</td>
-      ${isAdmin ? `<td onclick="event.stopPropagation()"><div class="flex-row">
-        <button class="btn btn-warning btn-sm" onclick="showModalEditKas('${k.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteKas('${k.id}')">🗑️</button>
-      </div></td>` : ''}
-    </tr>`).join('');
-}
-function showModalKas() {
-  editKasId = null;
-  document.getElementById('modal-kas-title').textContent = 'Tambah Transaksi';
-  document.getElementById('form-kas').reset();
-  document.getElementById('k-id').value = '';
-  document.getElementById('k-tanggal').value = new Date().toISOString().slice(0,10);
-  openModal('modal-kas');
-}
-function showModalEditKas(id) {
-  const k = allKasData.find(k => k.id === id);
-  if (!k) return;
-  editKasId = id;
-  document.getElementById('modal-kas-title').textContent = 'Edit Transaksi';
-  document.getElementById('k-id').value = id;
-  document.getElementById('k-tanggal').value = k.tanggal;
-  document.getElementById('k-jenis').value = k.jenis;
-  document.getElementById('k-nominal').value = k.nominal;
-  document.getElementById('k-ket').value = k.keterangan;
-  document.getElementById('k-kategori').value = k.kategori || 'lainnya';
-  openModal('modal-kas');
-}
-async function saveKas(e) {
-  e.preventDefault();
-  const id = document.getElementById('k-id').value;
-  const payload = {
-    tanggal: document.getElementById('k-tanggal').value,
-    jenis: document.getElementById('k-jenis').value,
-    nominal: parseInt(document.getElementById('k-nominal').value),
-    keterangan: document.getElementById('k-ket').value,
-    kategori: document.getElementById('k-kategori').value
-  };
-  let err;
-  if (id) { const r = await db.from('kas').update(payload).eq('id', id); err = r.error; }
-  else { const r = await db.from('kas').insert(payload); err = r.error; }
-  if (err) { showToast('Gagal: ' + err.message, 'error'); return; }
-  showToast('Kas disimpan!');
-  closeModal('modal-kas');
-  document.getElementById('form-kas').reset();
-  logAktivitas(id ? 'Edit Kas' : 'Tambah Kas', payload.keterangan);
-  loadKas(); loadDashboard();
-}
-async function deleteKas(id) {
-  if (!confirm('Hapus transaksi ini?')) return;
-  const { error } = await db.from('kas').delete().eq('id', id);
-  if (error) { showToast('Gagal hapus!', 'error'); return; }
-  showToast('Transaksi dihapus!');
-  logAktivitas('Hapus Kas', id);
-  loadKas(); loadDashboard();
-}
-
-// ========== PENGUMUMAN & KEGIATAN ==========
-function showModalPengumuman() {
-  document.getElementById('form-pengumuman').reset();
-  document.getElementById('p-id').value = '';
-  openModal('modal-pengumuman');
-}
-async function savePengumuman(e) {
-  e.preventDefault();
-  const id = document.getElementById('p-id').value;
-  const payload = { judul: document.getElementById('p-judul').value, isi: document.getElementById('p-isi').value, prioritas: document.getElementById('p-prioritas').value };
-  const r = id ? await db.from('pengumuman').update(payload).eq('id', id) : await db.from('pengumuman').insert(payload);
-  if (r.error) { showToast('Gagal!', 'error'); return; }
-  showToast('Pengumuman disimpan!');
-  closeModal('modal-pengumuman');
-  document.getElementById('form-pengumuman').reset();
-  loadPengumuman();
-}
-async function deletePengumuman(id) {
-  if (!confirm('Hapus pengumuman?')) return;
-  await db.from('pengumuman').delete().eq('id', id);
-  showToast('Pengumuman dihapus!'); loadPengumuman();
-}
-function showModalKegiatan() {
-  document.getElementById('form-kegiatan').reset();
-  document.getElementById('kg-id').value = '';
-  openModal('modal-kegiatan');
-}
-async function saveKegiatan(e) {
-  e.preventDefault();
-  const id = document.getElementById('kg-id').value;
-  const payload = {
-    nama: document.getElementById('kg-nama').value,
-    tanggal: document.getElementById('kg-tanggal').value,
-    waktu: document.getElementById('kg-waktu').value || null,
-    lokasi: document.getElementById('kg-lokasi').value,
-    deskripsi: document.getElementById('kg-deskripsi').value
-  };
-  const r = id ? await db.from('kegiatan').update(payload).eq('id', id) : await db.from('kegiatan').insert(payload);
-  if (r.error) { showToast('Gagal!', 'error'); return; }
-  showToast('Kegiatan disimpan!');
-  closeModal('modal-kegiatan');
-  document.getElementById('form-kegiatan').reset();
-  loadKegiatan();
-}
-async function deleteKegiatan(id) {
-  if (!confirm('Hapus kegiatan?')) return;
-  await db.from('kegiatan').delete().eq('id', id);
-  showToast('Kegiatan dihapus!'); loadKegiatan();
-}
-
-// ========== PROFIL ==========
-async function loadProfil() {
-  const isAdmin = currentUser === 'admin';
-  const el = document.getElementById('profil-content');
-  if (isAdmin) {
-    const { count: tw } = await db.from('warga').select('id', {count:'exact'});
-    const { count: tkas } = await db.from('kas').select('id', {count:'exact'});
-    el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Role</span><b>👮 Administrator</b></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Total Warga</span><b>${tw}</b></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Total Transaksi Kas</span><b>${tkas}</b></div>
-      </div>`;
-    loadLog();
-  } else {
-    const w = currentUser;
-    el.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Nama KK</span><b>${w.nama_kk}</b></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Alamat</span><b>Blok ${w.blok}-${w.nomor_rumah}</b></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Status</span><b>${w.status_hunian}</b></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Anggota Keluarga</span><b>${w.jumlah_anggota} orang</b></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>No. HP</span><b>${w.no_hp||'-'}</b></div>
-      </div>`;
-  }
-}
-async function loadLog() {
-  const { data } = await db.from('log_aktivitas').select('*').order('created_at', {ascending:false}).limit(30);
-  const el = document.getElementById('list-log');
-  if (!data || data.length === 0) { el.innerHTML = '<div class="empty-state">Belum ada aktivitas</div>'; return; }
-  el.innerHTML = data.map(l => `
-    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;font-size:13px;">
-      <div><b>${l.aksi}</b><br><span style="color:#aaa;">${l.detail||''}</span></div>
-      <div style="font-size:11px;color:#aaa;white-space:nowrap;margin-left:8px;">${fmtDate(l.created_at)}</div>
-    </div>`).join('');
-}
-async function clearLog() {
-  if (!confirm('Hapus semua log?')) return;
-  await db.from('log_aktivitas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  showToast('Log dihapus!'); loadLog();
-}
-
-// ========== EXPORT ==========
-function exportKasPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(16); doc.text('Laporan Kas RT', 14, 20);
-  doc.setFontSize(11);
-  let y = 35;
-  doc.text('Tanggal', 14, y); doc.text('Keterangan', 50, y); doc.text('Jenis', 120, y); doc.text('Nominal', 155, y);
-  y += 6; doc.line(14, y, 196, y); y += 4;
-  allKasData.forEach(k => {
-    if (y > 270) { doc.addPage(); y = 20; }
-    doc.text(fmtDate(k.tanggal), 14, y);
-    doc.text(k.keterangan.substring(0,35), 50, y);
-    doc.text(k.jenis, 120, y);
-    doc.text(rp(k.nominal), 155, y);
-    y += 7;
-  });
-  doc.save('laporan-kas-rt.pdf');
-  showToast('PDF berhasil diunduh!');
-}
-function exportKasExcel() {
-  const rows = allKasData.map(k => ({ Tanggal: fmtDate(k.tanggal), Keterangan: k.keterangan, Kategori: k.kategori, Jenis: k.jenis, Nominal: k.nominal }));
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Kas RT');
-  XLSX.writeFile(wb, 'laporan-kas-rt.xlsx');
-  showToast('Excel berhasil diunduh!');
-}
-
-// Close overlay on bg click
-document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); });
-});
-</script>
 </body>
 </html>
