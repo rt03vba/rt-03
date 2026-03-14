@@ -8,8 +8,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
   <meta name="theme-color" content="#1565C0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -622,11 +622,12 @@ async function deleteKegiatan(id) {
 // ============================================================
 async function loadWarga() {
   const isAdmin = currentUser==='admin';
+  // Semua user bisa lihat semua warga, hapus filter by id
   let query = db.from('warga').select('*').order('blok').order('nomor_rumah');
-  if (!isAdmin) query = query.eq('id', currentUser.id);
   const { data, error } = await query;
   if (error) { showToast('Gagal memuat data warga','error'); return; }
   allWarga = data || [];
+  // Filter blok chip hanya untuk admin
   if (isAdmin) {
     const bloks = [...new Set(allWarga.map(w=>w.blok))].sort();
     const fc = document.getElementById('filter-blok');
@@ -646,9 +647,9 @@ function renderWarga(data) {
   const tbody = document.getElementById('tabel-warga');
   if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div>Tidak ada warga</div></td></tr>'; return; }
   tbody.innerHTML = data.map(w=>`
-    <tr class="warga-row-clickable" onclick="showRiwayatWarga('${w.id}','${w.nama_kk.replace(/'/g,"\\'")}')">
+    <tr ${isAdmin ? `class="warga-row-clickable" onclick="showRiwayatWarga('${w.id}','${w.nama_kk.replace(/'/g,"\'")}')"` : ''} style="${isAdmin?'':'cursor:default'}">
       <td><b>Blok ${w.blok}-${w.nomor_rumah}</b></td>
-      <td><span class="click-name">${w.nama_kk}</span></td>
+      <td><span class="${isAdmin?'click-name':''}">${w.nama_kk}</span></td>
       ${isAdmin?`<td style="font-size:11px;color:#999;">${w.nik}</td>`:''}
       <td><span class="badge ${w.status_hunian==='pribadi'?'badge-success':'badge-warning'}">${w.status_hunian}</span></td>
       <td style="text-align:center;">${w.jumlah_anggota}</td>
