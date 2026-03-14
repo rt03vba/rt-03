@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RT Smart App - Manajemen Warga</title>
+  <title>RT 03 APP - Manajemen Warga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -20,8 +20,8 @@
   <div class="login-card">
     <div class="login-logo">
       <div class="logo-circle">🏘️</div>
-      <h2>RT Smart App</h2>
-      <p>Sistem Manajemen Warga RT</p>
+      <h2>RT 03 APP</h2>
+      <p>Sistem Manajemen Warga VBA</p>
     </div>
     <div class="login-tabs">
       <button class="login-tab active" onclick="switchLoginTab('admin')">👮 Admin</button>
@@ -616,7 +616,7 @@ async function deleteKegiatan(id) {
 async function loadWarga() {
   const isAdmin = currentUser==='admin';
   let query = db.from('warga').select('*').order('blok').order('nomor_rumah');
-  // semua role bisa lihat seluruh daftar warga
+  if (!isAdmin) query = query.eq('id', currentUser.id);
   const { data, error } = await query;
   if (error) { showToast('Gagal memuat data warga','error'); return; }
   allWarga = data || [];
@@ -718,7 +718,7 @@ async function loadIuran() {
   const tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
   const isAdmin=currentUser==='admin';
   let wargaQuery=db.from('warga').select('*').order('blok').order('nomor_rumah');
-  // semua role bisa lihat seluruh data iuran
+  if (!isAdmin) wargaQuery=wargaQuery.eq('id',currentUser.id);
   const [resW,resI]=await Promise.all([wargaQuery, db.from('iuran').select('*').eq('bulan',bulan).eq('tahun',tahun)]);
   allIuranData=(resW.data||[]).map(w=>({...w, iuran:(resI.data||[]).find(i=>i.warga_id===w.id)||null}));
   renderIuran(allIuranData);
