@@ -44,6 +44,11 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
   margin: 0 auto 12px; font-size: 32px;
   box-shadow: 0 4px 20px rgba(25,118,210,0.4);
 }
+.login-logo .logo-img {
+  width: 160px; height: 160px; object-fit: contain;
+  margin: 0 auto 16px; display: block;
+  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.20));
+}
 .login-logo h2 { font-size: 22px; font-weight: 700; color: #1A1A2E; }
 .login-logo p { font-size: 13px; color: #757575; margin-top: 4px; }
 .login-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: #F5F7FA; padding: 4px; border-radius: 10px; }
@@ -95,6 +100,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
 }
 .top-bar-left { display: flex; align-items: center; gap: 10px; }
 .top-bar-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.top-bar-logo-img { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15)); }
 .top-bar-title { font-size: 16px; font-weight: 700; color: var(--text); }
 .top-bar-subtitle { font-size: 11px; color: var(--text-muted); }
 .top-bar-right { display: flex; align-items: center; gap: 10px; }
