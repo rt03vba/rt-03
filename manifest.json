@@ -1,0 +1,12 @@
+{
+  "name": "RT 03 RW 12 - Villa Bintaro Asri",
+  "short_name": "RT 03 App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1565C0",
+  "theme_color": "#1565C0",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
