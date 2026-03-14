@@ -157,7 +157,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Alamat</th><th>Nama KK</th><th>Status</th><th>Tgl Bayar</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Alamat</th><th>Nama KK</th><th>Status</th><th id="th-iuran-tgl">Tgl Bayar</th><th id="th-iuran-aksi">Aksi</th></tr></thead>
             <tbody id="tabel-iuran"><tr><td colspan="5" class="loading">Memuat...</td></tr></tbody>
           </table>
         </div>
@@ -521,6 +521,7 @@ function startApp() {
   const logCard   = document.getElementById('log-card');   if (logCard)   logCard.style.display   = isAdmin ? 'block' : 'none';
   const thNik     = document.getElementById('th-nik');      if (thNik)     thNik.style.display     = isAdmin ? '' : 'none';
   const thKasAksi = document.getElementById('th-kas-aksi'); if (thKasAksi) thKasAksi.style.display = isAdmin ? '' : 'none';
+  const thIuranAksi = document.getElementById('th-iuran-aksi'); if (thIuranAksi) thIuranAksi.style.display = isAdmin ? '' : 'none';
   initFilterBulanTahun('filter-bulan-iuran', 'filter-tahun-iuran', loadIuran);
   loadDashboard(); loadWarga(); loadIuran(); loadKas(); loadProfil();
 }
@@ -740,7 +741,7 @@ function renderIuran(data) {
       <td>${item.nama_kk}</td>
       <td>${item.iuran?`<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`:'<span class="badge badge-warning">Belum input</span>'}</td>
       <td style="font-size:12px;">${item.iuran?fmtDate(item.iuran.tgl_bayar):'-'}</td>
-      <td>${isAdmin?`<button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button>`:''}</td>
+      ${isAdmin?`<td><button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button></td>`:''}
     </tr>`).join('');
 }
 function filterIuran(q) {
