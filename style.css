@@ -257,3 +257,18 @@ tr:hover td { background: #F9F9F9; }
   .kas-filter-row { gap: 6px; }
   .kas-filter-row select { font-size: 13px; }
 }
+
+/* =============================================
+   GANTI PASSWORD
+   ============================================= */
+.pass-input-wrap {
+  position: relative;
+}
+.pass-input-wrap input {
+  padding-right: 44px !important;
+}
+.pass-toggle-btn {
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 16px;
+}

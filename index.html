@@ -4,9 +4,174 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RT 03 APP - Manajemen Warga</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ============================================================
+// GANTI PASSWORD
+// ============================================================
+function togglePass(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function showModalGantiPasswordAdmin() {
+  const el = document.getElementById('ganti-pass-content');
+  el.innerHTML = `
+    <div class="form-group">
+      <label>Password Lama</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-lama" placeholder="Password saat ini" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-lama',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-baru" placeholder="Password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-baru',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Konfirmasi Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-konfirm" placeholder="Ulangi password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-konfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="flex-row">
+      <button class="btn btn-primary" onclick="simpanPasswordAdmin()">💾 Simpan</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-ganti-password')">Batal</button>
+    </div>`;
+  openModal('modal-ganti-password');
+}
+
+function simpanPasswordAdmin() {
+  const lama    = document.getElementById('gp-lama').value.trim();
+  const baru    = document.getElementById('gp-baru').value.trim();
+  const konfirm = document.getElementById('gp-konfirm').value.trim();
+  const passSkrg = localStorage.getItem('rt_admin_pass') || '111';
+  if (lama !== passSkrg) { showToast('Password lama salah!', 'error'); return; }
+  if (!baru) { showToast('Password baru tidak boleh kosong!', 'error'); return; }
+  if (baru !== konfirm) { showToast('Konfirmasi password tidak cocok!', 'error'); return; }
+  localStorage.setItem('rt_admin_pass', baru);
+  showToast('Password admin berhasil diubah!');
+  logAktivitas('Ganti Password Admin', '');
+  closeModal('modal-ganti-password');
+}
+
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+// ============================================================
+// GANTI PASSWORD
+// ============================================================
+function togglePass(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function showModalGantiPasswordAdmin() {
+  const el = document.getElementById('ganti-pass-content');
+  el.innerHTML = `
+    <div class="form-group">
+      <label>Password Lama</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-lama" placeholder="Password saat ini" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-lama',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-baru" placeholder="Password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-baru',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Konfirmasi Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-konfirm" placeholder="Ulangi password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-konfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="flex-row">
+      <button class="btn btn-primary" onclick="simpanPasswordAdmin()">💾 Simpan</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-ganti-password')">Batal</button>
+    </div>`;
+  openModal('modal-ganti-password');
+}
+
+function simpanPasswordAdmin() {
+  const lama    = document.getElementById('gp-lama').value.trim();
+  const baru    = document.getElementById('gp-baru').value.trim();
+  const konfirm = document.getElementById('gp-konfirm').value.trim();
+  const passSkrg = localStorage.getItem('rt_admin_pass') || '111';
+  if (lama !== passSkrg) { showToast('Password lama salah!', 'error'); return; }
+  if (!baru) { showToast('Password baru tidak boleh kosong!', 'error'); return; }
+  if (baru !== konfirm) { showToast('Konfirmasi password tidak cocok!', 'error'); return; }
+  localStorage.setItem('rt_admin_pass', baru);
+  showToast('Password admin berhasil diubah!');
+  logAktivitas('Ganti Password Admin', '');
+  closeModal('modal-ganti-password');
+}
+
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+// ============================================================
+// GANTI PASSWORD
+// ============================================================
+function togglePass(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function showModalGantiPasswordAdmin() {
+  const el = document.getElementById('ganti-pass-content');
+  el.innerHTML = `
+    <div class="form-group">
+      <label>Password Lama</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-lama" placeholder="Password saat ini" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-lama',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-baru" placeholder="Password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-baru',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Konfirmasi Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-konfirm" placeholder="Ulangi password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-konfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="flex-row">
+      <button class="btn btn-primary" onclick="simpanPasswordAdmin()">💾 Simpan</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-ganti-password')">Batal</button>
+    </div>`;
+  openModal('modal-ganti-password');
+}
+
+function simpanPasswordAdmin() {
+  const lama    = document.getElementById('gp-lama').value.trim();
+  const baru    = document.getElementById('gp-baru').value.trim();
+  const konfirm = document.getElementById('gp-konfirm').value.trim();
+  const passSkrg = localStorage.getItem('rt_admin_pass') || '111';
+  if (lama !== passSkrg) { showToast('Password lama salah!', 'error'); return; }
+  if (!baru) { showToast('Password baru tidak boleh kosong!', 'error'); return; }
+  if (baru !== konfirm) { showToast('Konfirmasi password tidak cocok!', 'error'); return; }
+  localStorage.setItem('rt_admin_pass', baru);
+  showToast('Password admin berhasil diubah!');
+  logAktivitas('Ganti Password Admin', '');
+  closeModal('modal-ganti-password');
+}
+
+</script>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" type="image/png" href="icon-192.png">
@@ -265,7 +430,13 @@
       </div>
       <div class="form-group"><label>Jumlah Anggota Keluarga</label><input type="number" id="w-anggota" min="1" max="20" value="1"></div>
       <div class="form-group"><label>No. HP</label><input type="text" id="w-hp" placeholder="08xxxxxxxxxx"></div>
-      <div class="form-group"><label>Password Login Warga</label><input type="text" id="w-password" placeholder="Default: 123" value="123"></div>
+      <div class="form-group">
+        <label>Password Login Warga</label>
+        <div style="position:relative;">
+          <input type="password" id="w-password" placeholder="Default: 123" value="123" style="width:100%;padding-right:44px;">
+          <button type="button" onclick="togglePass('w-password',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+        </div>
+      </div>
       <input type="hidden" id="w-id">
       <div class="flex-row">
         <button type="submit" class="btn btn-primary">💾 Simpan</button>
@@ -481,7 +652,8 @@ function switchLoginTab(tab) {
 }
 function loginAdmin() {
   const pass = document.getElementById('admin-pass').value.trim();
-  if (pass !== '111') { showToast('Kode admin salah!','error'); return; }
+  const passBenar = localStorage.getItem('rt_admin_pass') || '111';
+  if (pass !== passBenar) { showToast('Kode admin salah!','error'); return; }
   currentUser = 'admin';
   saveSession(currentUser);
   startApp();
@@ -916,19 +1088,35 @@ async function loadProfil() {
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Role</span><b>👮 Administrator</b></div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Total Warga</span><b>${tw}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Total Transaksi Kas</span><b>${tkas}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Total Transaksi Kas</span><b>${tkas}</b></div>
+      <div style="padding:8px 0;">
+        <button class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;" onclick="showModalGantiPasswordAdmin()">🔑 Ganti Password Admin</button>
+      </div>
     </div>`;
     loadLog();
   } else {
     const w=currentUser;
+    const passDisplay='•'.repeat((w.password||'123').length);
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Nama KK</span><b>${w.nama_kk}</b></div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Alamat</span><b>Blok ${w.blok}-${w.nomor_rumah}</b></div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Status</span><b>${w.status_hunian}</b></div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Anggota Keluarga</span><b>${w.jumlah_anggota} orang</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>No. HP</span><b>${w.no_hp||'-'}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>No. HP</span><b>${w.no_hp||'-'}</b></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F0F0F0;">
+        <span>Password</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b id="profil-pass-display">${passDisplay}</b>
+          <button type="button" onclick="toggleProfilPass()" style="background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+        </div>
+      </div>
     </div>`;
   }
+}
+function toggleProfilPass() {
+  const el = document.getElementById('profil-pass-display');
+  const pass = currentUser.password || '123';
+  el.textContent = el.textContent.includes('•') ? pass : '•'.repeat(pass.length);
 }
 async function loadLog() {
   const { data }=await db.from('log_aktivitas').select('*').order('created_at',{ascending:false}).limit(30);
@@ -952,7 +1140,73 @@ async function clearLog() {
   }
   // Jika tidak ada session, halaman login sudah tampil by default
 })();
+
+// ============================================================
+// GANTI PASSWORD
+// ============================================================
+function togglePass(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function showModalGantiPasswordAdmin() {
+  const el = document.getElementById('ganti-pass-content');
+  el.innerHTML = `
+    <div class="form-group">
+      <label>Password Lama</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-lama" placeholder="Password saat ini" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-lama',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-baru" placeholder="Password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-baru',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Konfirmasi Password Baru</label>
+      <div style="position:relative;">
+        <input type="password" id="gp-konfirm" placeholder="Ulangi password baru" style="width:100%;padding-right:44px;">
+        <button type="button" onclick="togglePass('gp-konfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+      </div>
+    </div>
+    <div class="flex-row">
+      <button class="btn btn-primary" onclick="simpanPasswordAdmin()">💾 Simpan</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-ganti-password')">Batal</button>
+    </div>`;
+  openModal('modal-ganti-password');
+}
+
+function simpanPasswordAdmin() {
+  const lama    = document.getElementById('gp-lama').value.trim();
+  const baru    = document.getElementById('gp-baru').value.trim();
+  const konfirm = document.getElementById('gp-konfirm').value.trim();
+  const passSkrg = localStorage.getItem('rt_admin_pass') || '111';
+  if (lama !== passSkrg) { showToast('Password lama salah!', 'error'); return; }
+  if (!baru) { showToast('Password baru tidak boleh kosong!', 'error'); return; }
+  if (baru !== konfirm) { showToast('Konfirmasi password tidak cocok!', 'error'); return; }
+  localStorage.setItem('rt_admin_pass', baru);
+  showToast('Password admin berhasil diubah!');
+  logAktivitas('Ganti Password Admin', '');
+  closeModal('modal-ganti-password');
+}
+
 </script>
+
+
+<div class="overlay" id="modal-ganti-password">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔑 Ganti Password</span>
+      <button class="modal-close" onclick="closeModal('modal-ganti-password')">✕</button>
+    </div>
+    <div id="ganti-pass-content"></div>
+  </div>
+</div>
 
 </body>
 </html>
