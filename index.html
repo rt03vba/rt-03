@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RT Smart App - Manajemen Warga</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="style.css">
@@ -88,10 +87,6 @@
           <div class="stat-value" id="stat-belum">-</div>
           <div class="stat-label">❌ Belum Bayar</div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">📈 Grafik Kas 6 Bulan</span></div>
-        <canvas id="kasChart" height="200"></canvas>
       </div>
       <div class="card">
         <div class="card-header">
@@ -387,7 +382,6 @@ let allKasData      = [];
 let filterBlokAktif = '';
 let editWargaId     = null;
 let editKasId       = null;
-let kasChartInstance = null;
 
 // ============================================================
 // UTILS
@@ -532,7 +526,7 @@ async function loadDashboard() {
   const [resW, resI, resK] = await Promise.all([
     db.from('warga').select('id', { count:'exact' }),
     db.from('iuran').select('*').eq('bulan', bln).eq('tahun', thn),
-    db.from('kas').select('*')
+    db.from('kas').select('nominal, jenis')
   ]);
   const totalWarga = resW.count || 0;
   document.getElementById('stat-warga').textContent = totalWarga;
@@ -543,29 +537,7 @@ async function loadDashboard() {
   const masuk    = kasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
   const keluar   = kasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
   document.getElementById('stat-saldo').textContent = rp(masuk - keluar);
-  buildKasChart(kasData);
   loadPengumuman(); loadKegiatan();
-}
-function buildKasChart(data) {
-  const now = new Date(), labels=[], masukArr=[], keluarArr=[];
-  for (let i=5; i>=0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    labels.push(d.toLocaleDateString('id-ID',{month:'short',year:'2-digit'}));
-    const m=d.getMonth()+1, y=d.getFullYear();
-    masukArr.push(data.filter(k=>k.jenis==='masuk'&&new Date(k.tanggal).getMonth()+1===m&&new Date(k.tanggal).getFullYear()===y).reduce((s,k)=>s+k.nominal,0));
-    keluarArr.push(data.filter(k=>k.jenis==='keluar'&&new Date(k.tanggal).getMonth()+1===m&&new Date(k.tanggal).getFullYear()===y).reduce((s,k)=>s+k.nominal,0));
-  }
-  if (kasChartInstance) kasChartInstance.destroy();
-  kasChartInstance = new Chart(document.getElementById('kasChart'), {
-    type:'bar',
-    data:{ labels, datasets:[
-      { label:'Kas Masuk',  data:masukArr,  backgroundColor:'rgba(67,160,71,0.7)',  borderRadius:6 },
-      { label:'Kas Keluar', data:keluarArr, backgroundColor:'rgba(229,57,53,0.7)', borderRadius:6 }
-    ]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom' } },
-      scales:{ y:{ ticks:{ callback: v=>'Rp '+(v/1000).toFixed(0)+'k' } } } }
-  });
 }
 
 // ============================================================
