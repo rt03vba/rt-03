@@ -616,7 +616,7 @@ async function deleteKegiatan(id) {
 async function loadWarga() {
   const isAdmin = currentUser==='admin';
   let query = db.from('warga').select('*').order('blok').order('nomor_rumah');
-  if (!isAdmin) query = query.eq('id', currentUser.id);
+  // semua role bisa lihat seluruh daftar warga
   const { data, error } = await query;
   if (error) { showToast('Gagal memuat data warga','error'); return; }
   allWarga = data || [];
@@ -718,7 +718,7 @@ async function loadIuran() {
   const tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
   const isAdmin=currentUser==='admin';
   let wargaQuery=db.from('warga').select('*').order('blok').order('nomor_rumah');
-  if (!isAdmin) wargaQuery=wargaQuery.eq('id',currentUser.id);
+  // semua role bisa lihat seluruh data iuran
   const [resW,resI]=await Promise.all([wargaQuery, db.from('iuran').select('*').eq('bulan',bulan).eq('tahun',tahun)]);
   allIuranData=(resW.data||[]).map(w=>({...w, iuran:(resI.data||[]).find(i=>i.warga_id===w.id)||null}));
   renderIuran(allIuranData);
