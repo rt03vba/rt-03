@@ -690,10 +690,16 @@ async function deleteKegiatan(id) {
 // ============================================================
 async function loadWarga() {
   const isAdmin = currentUser==='admin';
-  let query = db.from('warga').select('*').order('blok', {ascending:true}).order('nomor_rumah', {ascending:true});
+  // Ambil semua data lalu sort di client: blok abjad, nomor rumah numerik
+  let query = db.from('warga').select('*');
   const { data, error } = await query;
   if (error) { showToast('Gagal memuat data warga','error'); return; }
-  allWarga = data || [];
+  // Sort: blok abjad, lalu nomor rumah sebagai angka
+  allWarga = (data || []).sort((a, b) => {
+    const blokCmp = a.blok.localeCompare(b.blok, 'id', {sensitivity:'base'});
+    if (blokCmp !== 0) return blokCmp;
+    return parseInt(a.nomor_rumah) - parseInt(b.nomor_rumah);
+  });
   // Filter blok chip hanya untuk admin
   if (isAdmin) {
     const bloks = [...new Set(allWarga.map(w=>w.blok))].sort();
@@ -1525,19 +1531,14 @@ async function showAnggotaKeluarga(wargaId, namaKK) {
 
   if (error) { el.innerHTML = '<div class="empty-state">Gagal memuat data</div>'; return; }
 
-  const addBtn = isAdmin
-    ? `<button class="btn btn-primary btn-sm" style="margin-bottom:12px;width:100%;"
-        onclick="showFormAnggota(null,'${wargaId}')">+ Tambah Anggota</button>`
-    : '';
-
   if (!data || !data.length) {
-    el.innerHTML = addBtn + '<div class="empty-state"><div class="empty-icon">👥</div>Belum ada data anggota keluarga</div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div>Belum ada data anggota keluarga</div>';
     return;
   }
 
   const hubunganIcon = { 'Kepala Keluarga':'👨', 'Istri':'👩', 'Anak':'👧', 'Orang Tua':'👴', 'Saudara':'👫', 'Lainnya':'👤' };
 
-  el.innerHTML = addBtn + `
+  el.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px;">
       ${data.map((a,idx) => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#F8FAFC;border-radius:10px;border-left:3px solid #1976D2;">
