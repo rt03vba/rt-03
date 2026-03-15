@@ -270,9 +270,12 @@
       <div class="form-group"><label>Status Hunian</label>
         <select id="w-status"><option value="pribadi">Pribadi</option><option value="kontrak">Kontrak</option></select>
       </div>
-      <div class="form-group"><label>Jumlah Anggota Keluarga</label><input type="number" id="w-anggota" min="1" max="20" value="1"></div>
+      <div class="form-group">
+        <label>Jumlah Anggota Keluarga</label>
+        <input type="number" id="w-anggota" min="1" max="20" value="1" oninput="generateKolomAnggota(this.value)">
+      </div>
+      <div id="w-anggota-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
       <div class="form-group"><label>No. HP</label><input type="text" id="w-hp" placeholder="08xxxxxxxxxx"></div>
-
       <input type="hidden" id="w-id">
       <div class="flex-row">
         <button type="submit" class="btn btn-primary">💾 Simpan</button>
@@ -687,8 +690,7 @@ async function deleteKegiatan(id) {
 // ============================================================
 async function loadWarga() {
   const isAdmin = currentUser==='admin';
-  // Semua user bisa lihat semua warga, hapus filter by id
-  let query = db.from('warga').select('*').order('blok').order('nomor_rumah');
+  let query = db.from('warga').select('*').order('blok', {ascending:true}).order('nomor_rumah', {ascending:true});
   const { data, error } = await query;
   if (error) { showToast('Gagal memuat data warga','error'); return; }
   allWarga = data || [];
@@ -761,29 +763,68 @@ async function showRiwayatWarga(wargaId, nama) {
   </table></div>`;
 }
 function showModalTambahWarga() {
-  editWargaId=null; document.getElementById('modal-warga-title').textContent='Tambah Warga';
-  document.getElementById('form-warga').reset(); document.getElementById('w-id').value='';
+  editWargaId=null;
+  document.getElementById('modal-warga-title').textContent='Tambah Warga';
+  document.getElementById('form-warga').reset();
+  document.getElementById('w-id').value='';
+  document.getElementById('w-anggota').value = 1;
+  generateKolomAnggota(1);
   openModal('modal-warga');
 }
-function showModalEditWarga(id) {
+async function showModalEditWarga(id) {
   const w=allWarga.find(w=>w.id===id); if(!w) return;
-  editWargaId=id; document.getElementById('modal-warga-title').textContent='Edit Data Warga';
-  document.getElementById('w-id').value=id; document.getElementById('w-nik').value=w.nik;
-  document.getElementById('w-nama').value=w.nama_kk; document.getElementById('w-blok').value=w.blok;
-  document.getElementById('w-nomor').value=w.nomor_rumah; document.getElementById('w-status').value=w.status_hunian;
-  document.getElementById('w-anggota').value=w.jumlah_anggota; document.getElementById('w-hp').value=w.no_hp||'';
+  editWargaId=id;
+  document.getElementById('modal-warga-title').textContent='Edit Data Warga';
+  document.getElementById('w-id').value=id;
+  document.getElementById('w-nik').value=w.nik;
+  document.getElementById('w-nama').value=w.nama_kk;
+  document.getElementById('w-blok').value=w.blok;
+  document.getElementById('w-nomor').value=w.nomor_rumah;
+  document.getElementById('w-status').value=w.status_hunian;
+  document.getElementById('w-anggota').value=w.jumlah_anggota;
+  document.getElementById('w-hp').value=w.no_hp||'';
+
+  // Ambil data anggota dari Supabase lalu generate kolom
+  const { data: anggotaList } = await db.from('anggota_keluarga')
+    .select('*').eq('warga_id', id).order('created_at');
+  generateKolomAnggota(w.jumlah_anggota, anggotaList || []);
   openModal('modal-warga');
 }
 async function saveWarga(e) {
   e.preventDefault();
   const id=document.getElementById('w-id').value, nik=document.getElementById('w-nik').value.trim();
-  const payload={ nik, nama_kk:document.getElementById('w-nama').value.trim(), blok:document.getElementById('w-blok').value.trim().toUpperCase(), nomor_rumah:document.getElementById('w-nomor').value.trim(), status_hunian:document.getElementById('w-status').value, jumlah_anggota:parseInt(document.getElementById('w-anggota').value)||1, no_hp:document.getElementById('w-hp').value.trim() };
+  const jumlah = parseInt(document.getElementById('w-anggota').value)||1;
+  const payload={ nik, nama_kk:document.getElementById('w-nama').value.trim(), blok:document.getElementById('w-blok').value.trim().toUpperCase(), nomor_rumah:document.getElementById('w-nomor').value.trim(), status_hunian:document.getElementById('w-status').value, jumlah_anggota:jumlah, no_hp:document.getElementById('w-hp').value.trim() };
   const { data:existing }=await db.from('warga').select('id').eq('nik',nik).neq('id',id||'00000000-0000-0000-0000-000000000000');
   if (existing&&existing.length) { showToast('NIK sudah terdaftar!','error'); return; }
+  let wargaId = id;
   let err;
-  if (id) { const r=await db.from('warga').update(payload).eq('id',id); err=r.error; }
-  else    { const r=await db.from('warga').insert(payload); err=r.error; }
+  if (id) {
+    const r=await db.from('warga').update(payload).eq('id',id); err=r.error;
+  } else {
+    const r=await db.from('warga').insert(payload).select('id').single();
+    err=r.error; if(!err) wargaId=r.data.id;
+  }
   if (err) { showToast('Gagal menyimpan: '+err.message,'error'); return; }
+
+  // Simpan anggota keluarga dari form
+  if (wargaId) {
+    // Hapus anggota lama lalu insert baru
+    await db.from('anggota_keluarga').delete().eq('warga_id', wargaId);
+    const rows = document.querySelectorAll('#w-anggota-list .anggota-row');
+    const anggotaData = [];
+    rows.forEach(row => {
+      const nama = row.querySelector('.a-nama-input').value.trim();
+      const hub  = row.querySelector('.a-hub-input').value;
+      if (nama) anggotaData.push({ warga_id: wargaId, nama, hubungan: hub });
+    });
+    if (anggotaData.length > 0) {
+      await db.from('anggota_keluarga').insert(anggotaData);
+    }
+    // Sync jumlah_anggota sesuai baris yang terisi
+    await db.from('warga').update({ jumlah_anggota: anggotaData.length || jumlah }).eq('id', wargaId);
+  }
+
   showToast(id?'Data warga diperbarui!':'Warga berhasil ditambahkan!');
   closeModal('modal-warga'); document.getElementById('form-warga').reset();
   logAktivitas(id?'Edit Warga':'Tambah Warga', payload.nama_kk); loadWarga();
@@ -862,25 +903,32 @@ async function saveIuran(e) {
   else         { const r=await db.from('iuran').insert(payload); err=r.error; }
   if (err) { showToast('Gagal: '+err.message,'error'); return; }
 
-  // AUTO-INSERT KAS MASUK jika status = lunas
-  if (status === 'lunas') {
-    // Cari nama warga untuk keterangan
-    const warga = allIuranData.find(w => w.id === wargaId);
-    const namaWarga = warga ? warga.nama_kk : wargaId;
-    const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const warga     = allIuranData.find(w => w.id === wargaId);
+  const namaWarga = warga ? warga.nama_kk : wargaId;
+  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const ketKas    = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
 
-    // Cek apakah sudah ada entri kas untuk iuran ini (hindari duplikat)
-    const refKey = `iuran-${wargaId}-${bulan}-${tahun}`;
-    const { data: existing } = await db.from('kas').select('id').eq('keterangan', `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`);
-    if (!existing || existing.length === 0) {
+  // Cari entri kas terkait
+  const { data: kasExisting } = await db.from('kas').select('id,nominal')
+    .eq('keterangan', ketKas).eq('kategori','iuran').eq('jenis','masuk');
+
+  if (status === 'lunas') {
+    if (!kasExisting || kasExisting.length === 0) {
+      // Insert kas baru
       await db.from('kas').insert({
-        tanggal:    tglBayar || new Date().toISOString().slice(0,10),
-        jenis:      'masuk',
-        nominal:    nominal,
-        keterangan: `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`,
-        kategori:   'iuran',
-        created_by: 'auto'
+        tanggal: tglBayar || new Date().toISOString().slice(0,10),
+        jenis: 'masuk', nominal, keterangan: ketKas, kategori: 'iuran', created_by: 'auto'
       });
+    } else {
+      // Update nominal & tanggal
+      await db.from('kas').update({
+        nominal, tanggal: tglBayar || new Date().toISOString().slice(0,10)
+      }).eq('id', kasExisting[0].id);
+    }
+  } else {
+    // Belum bayar → hapus kas terkait
+    if (kasExisting && kasExisting.length > 0) {
+      for (const k of kasExisting) await db.from('kas').delete().eq('id', k.id);
     }
   }
 
@@ -892,7 +940,6 @@ async function saveIuran(e) {
 
   // Otomatis tampilkan bukti pembayaran jika status lunas
   if (status === 'lunas') {
-    // Ambil iuranId yang baru jika insert
     let finalIuranId = iuranId;
     if (!finalIuranId) {
       const { data: newIuran } = await db.from('iuran').select('id')
@@ -1578,6 +1625,40 @@ async function syncJumlahAnggota(wargaId) {
   const { count } = await db.from('anggota_keluarga')
     .select('id', { count: 'exact' }).eq('warga_id', wargaId);
   await db.from('warga').update({ jumlah_anggota: count || 0 }).eq('id', wargaId);
+}
+
+
+
+// ============================================================
+// GENERATE KOLOM ANGGOTA DINAMIS
+// ============================================================
+function generateKolomAnggota(jumlah, existingData=[]) {
+  const n   = parseInt(jumlah) || 1;
+  const el  = document.getElementById('w-anggota-list');
+  if (!el) return;
+  const hubOptions = ['Kepala Keluarga','Istri','Anak','Orang Tua','Saudara','Lainnya'];
+
+  el.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const existing = existingData[i] || {};
+    const nama = existing.nama || '';
+    const hub  = existing.hubungan || (i===0 ? 'Kepala Keluarga' : 'Anak');
+    const optHtml = hubOptions.map(o =>
+      `<option value="${o}" ${hub===o?'selected':''}>${o}</option>`).join('');
+    const row = document.createElement('div');
+    row.className = 'anggota-row';
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;background:#F8FAFC;padding:8px 10px;border-radius:8px;border-left:3px solid #1976D2;';
+    row.innerHTML = `
+      <span style="font-size:12px;color:#64748B;min-width:20px;font-weight:600;">${i+1}.</span>
+      <input type="text" class="a-nama-input" placeholder="Nama anggota ke-${i+1}"
+        value="${nama}"
+        style="flex:1;padding:8px 10px;border:1.5px solid #E0E0E0;border-radius:6px;font-size:13px;">
+      <select class="a-hub-input"
+        style="width:130px;padding:8px 6px;border:1.5px solid #E0E0E0;border-radius:6px;font-size:12px;">
+        ${optHtml}
+      </select>`;
+    el.appendChild(row);
+  }
 }
 
 </script>
