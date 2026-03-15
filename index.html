@@ -711,25 +711,30 @@ function renderWarga(data) {
   const isAdmin = currentUser==='admin';
   const tbody = document.getElementById('tabel-warga');
   if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👥</div>Tidak ada warga</div></td></tr>'; return; }
-  tbody.innerHTML = data.map(w=>`
-    <tr ${isAdmin ? `class="warga-row-clickable" onclick="showRiwayatWarga('${w.id}','${w.nama_kk.replace(/'/g,"\'")}')"` : ''} style="${isAdmin?'':'cursor:default'}">
+  tbody.innerHTML = data.map(w=>{
+    const noHp = w.no_hp || '';
+    const waLink = noHp
+      ? (isAdmin
+          ? `<a href="https://wa.me/${noHp.replace(/[^0-9]/g,'').replace(/^0/,'62')}" target="_blank" onclick="event.stopPropagation()" style="color:#25D366;font-size:12px;font-weight:600;text-decoration:none;">📲 ${noHp}</a>`
+          : `<span style="font-size:12px;">${noHp}</span>`)
+      : '<span style="font-size:11px;color:#aaa;">-</span>';
+    return `<tr>
       <td><b>Blok ${w.blok}-${w.nomor_rumah}</b></td>
-      <td><span class="${isAdmin?'click-name':''}">${w.nama_kk}</span></td>
+      <td>
+        <span class="click-name" onclick="showAnggotaKeluarga('${w.id}','${w.nama_kk.replace(/'/g,"\\'")}')">
+          ${w.nama_kk}
+        </span>
+      </td>
       ${isAdmin?`<td style="font-size:11px;color:#999;">${w.nik}</td>`:''}
       <td><span class="badge ${w.status_hunian==='pribadi'?'badge-success':'badge-warning'}">${w.status_hunian}</span></td>
       <td style="text-align:center;">${w.jumlah_anggota}</td>
-      <td onclick="event.stopPropagation()" style="white-space:nowrap;">
-        ${w.no_hp
-          ? isAdmin
-            ? `<a href="https://wa.me/${w.no_hp.replace(/\D/g,'').replace(/^0/,'62')}" target="_blank" onclick="event.stopPropagation()" style="color:#25D366;font-size:12px;font-weight:600;text-decoration:none;">📲 ${w.no_hp}</a>`
-            : `<span style="font-size:12px;">${w.no_hp}</span>`
-          : '<span style="font-size:11px;color:#aaa;">-</span>'}
-      </td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap;">${waLink}</td>
       <td onclick="event.stopPropagation()">${isAdmin?`<div class="flex-row">
         <button class="btn btn-warning btn-sm" onclick="showModalEditWarga('${w.id}')">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deleteWarga('${w.id}')">🗑️</button>
       </div>`:''}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function setFilterBlok(blok, btn) {
   filterBlokAktif = blok;
@@ -805,25 +810,18 @@ async function loadIuran() {
 function renderIuran(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-iuran');
   if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
-  tbody.innerHTML=data.map(item=>{
-    const editBtn = isAdmin
-      ? `<button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})" title="Edit">✏️</button>`
-      : '';
-    const buktiBtn = item.iuran && item.iuran.status==='lunas'
-      ? `<button class="btn btn-success btn-sm" onclick="showBuktiPembayaran('${item.id}','${item.iuran.id}')" title="Lihat Bukti">🧾</button>`
-      : '';
-    const waBtn = item.iuran && item.iuran.status==='lunas' && isAdmin
-      ? `<button class="btn btn-success btn-sm" style="background:#25D366;margin-left:4px;" onclick="buktiKirimWA('${item.id}','${item.iuran.id}')" title="Kirim WA">📲</button>`
-      : '';
-    return `<tr>
+  tbody.innerHTML=data.map(item=>`
+    <tr>
       <td><b>Blok ${item.blok}-${item.nomor_rumah}</b></td>
       <td>${item.nama_kk}</td>
       <td>${item.iuran?`<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`:'<span class="badge badge-warning">Belum input</span>'}</td>
       <td style="font-size:12px;">${item.iuran?fmtDate(item.iuran.tgl_bayar):'-'}</td>
-      ${isAdmin?`<td>${editBtn}</td>`:''}
-      <td style="white-space:nowrap;">${buktiBtn}${waBtn}</td>
-    </tr>`;
-  }).join('');
+      ${isAdmin?`<td><button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button></td>`:''}
+      <td style="white-space:nowrap;">${item.iuran&&item.iuran.status==='lunas'?`
+        <button class="btn btn-success btn-sm" onclick="showBuktiPembayaran('${item.id}','${item.iuran.id}')" title="Lihat Bukti">🧾</button>
+        ${isAdmin?`<button class="btn btn-success btn-sm" style="background:#25D366;margin-left:4px;" onclick="buktiKirimWA('${item.id}','${item.iuran.id}')" title="Kirim WA">📲</button>`:''}
+      `:''}</td>
+    </tr>`).join('');
 }
 function filterIuran(q) {
   if (!q) { renderIuran(allIuranData); return; }
@@ -858,50 +856,31 @@ async function saveIuran(e) {
   const tglBayar = document.getElementById('i-tglbayar').value || null;
   const ket      = document.getElementById('i-ket').value;
 
-  // Simpan status sebelumnya (untuk deteksi perubahan)
-  const itemLama = allIuranData.find(w => w.id === wargaId);
-  const statusLama = itemLama?.iuran?.status || null;
-
   const payload = { warga_id:wargaId, bulan, tahun, status, nominal, tgl_bayar:tglBayar, keterangan:ket };
   let err;
   if (iuranId) { const r=await db.from('iuran').update(payload).eq('id',iuranId); err=r.error; }
   else         { const r=await db.from('iuran').insert(payload); err=r.error; }
   if (err) { showToast('Gagal: '+err.message,'error'); return; }
 
-  const warga     = allIuranData.find(w => w.id === wargaId);
-  const namaWarga = warga ? warga.nama_kk : wargaId;
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const ketKas    = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
-
-  // Cari entri kas yang terkait iuran ini
-  const { data: kasExisting } = await db.from('kas').select('id, nominal')
-    .eq('keterangan', ketKas).eq('kategori', 'iuran').eq('jenis', 'masuk');
-
+  // AUTO-INSERT KAS MASUK jika status = lunas
   if (status === 'lunas') {
-    if (!kasExisting || kasExisting.length === 0) {
-      // Belum ada kas → insert baru
+    // Cari nama warga untuk keterangan
+    const warga = allIuranData.find(w => w.id === wargaId);
+    const namaWarga = warga ? warga.nama_kk : wargaId;
+    const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+    // Cek apakah sudah ada entri kas untuk iuran ini (hindari duplikat)
+    const refKey = `iuran-${wargaId}-${bulan}-${tahun}`;
+    const { data: existing } = await db.from('kas').select('id').eq('keterangan', `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`);
+    if (!existing || existing.length === 0) {
       await db.from('kas').insert({
         tanggal:    tglBayar || new Date().toISOString().slice(0,10),
         jenis:      'masuk',
         nominal:    nominal,
-        keterangan: ketKas,
+        keterangan: `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`,
         kategori:   'iuran',
         created_by: 'auto'
       });
-    } else {
-      // Sudah ada kas → update nominal & tanggal jika berubah
-      const kasId = kasExisting[0].id;
-      await db.from('kas').update({
-        nominal:  nominal,
-        tanggal:  tglBayar || new Date().toISOString().slice(0,10)
-      }).eq('id', kasId);
-    }
-  } else {
-    // Status bukan lunas (belum bayar) → hapus entri kas terkait jika ada
-    if (kasExisting && kasExisting.length > 0) {
-      for (const k of kasExisting) {
-        await db.from('kas').delete().eq('id', k.id);
-      }
     }
   }
 
@@ -913,6 +892,7 @@ async function saveIuran(e) {
 
   // Otomatis tampilkan bukti pembayaran jika status lunas
   if (status === 'lunas') {
+    // Ambil iuranId yang baru jika insert
     let finalIuranId = iuranId;
     if (!finalIuranId) {
       const { data: newIuran } = await db.from('iuran').select('id')
@@ -1480,7 +1460,125 @@ function tampilkanHalamanBukti(encoded) {
   }
 }
 
+// ============================================================
+// ANGGOTA KELUARGA
+// ============================================================
+let currentWargaAnggota = null;
 
+async function showAnggotaKeluarga(wargaId, namaKK) {
+  currentWargaAnggota = { id: wargaId, nama: namaKK };
+  const isAdmin = currentUser === 'admin';
+  document.getElementById('modal-anggota-judul').textContent = '👨‍👩‍👧‍👦 ' + namaKK;
+  const el = document.getElementById('modal-anggota-content');
+  el.innerHTML = '<div class="loading">Memuat...</div>';
+  openModal('modal-anggota');
+
+  const { data, error } = await db.from('anggota_keluarga')
+    .select('*').eq('warga_id', wargaId).order('created_at');
+
+  if (error) { el.innerHTML = '<div class="empty-state">Gagal memuat data</div>'; return; }
+
+  const addBtn = isAdmin
+    ? `<button class="btn btn-primary btn-sm" style="margin-bottom:12px;width:100%;"
+        onclick="showFormAnggota(null,'${wargaId}')">+ Tambah Anggota</button>`
+    : '';
+
+  if (!data || !data.length) {
+    el.innerHTML = addBtn + '<div class="empty-state"><div class="empty-icon">👥</div>Belum ada data anggota keluarga</div>';
+    return;
+  }
+
+  const hubunganIcon = { 'Kepala Keluarga':'👨', 'Istri':'👩', 'Anak':'👧', 'Orang Tua':'👴', 'Saudara':'👫', 'Lainnya':'👤' };
+
+  el.innerHTML = addBtn + `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${data.map((a,idx) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#F8FAFC;border-radius:10px;border-left:3px solid #1976D2;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:20px;">${hubunganIcon[a.hubungan]||'👤'}</span>
+            <div>
+              <div style="font-weight:700;font-size:14px;">${a.nama}</div>
+              <div style="font-size:11px;color:#64748B;">${a.hubungan}</div>
+            </div>
+          </div>
+          ${isAdmin ? `
+          <div class="flex-row">
+            <button class="btn btn-warning btn-sm" onclick="showFormAnggota('${a.id}','${wargaId}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="hapusAnggota('${a.id}','${wargaId}')">🗑️</button>
+          </div>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+function showFormAnggota(anggotaId, wargaId) {
+  document.getElementById('a-warga-id').value = wargaId;
+  document.getElementById('a-id').value = anggotaId || '';
+  if (anggotaId) {
+    // Edit — ambil data dari DOM
+    document.getElementById('modal-form-anggota-title').textContent = 'Edit Anggota';
+    const el = document.getElementById('modal-anggota-content');
+    // Cari data dari Supabase
+    db.from('anggota_keluarga').select('*').eq('id', anggotaId).single().then(({data}) => {
+      if (data) {
+        document.getElementById('a-nama').value = data.nama;
+        document.getElementById('a-hubungan').value = data.hubungan;
+      }
+    });
+  } else {
+    document.getElementById('modal-form-anggota-title').textContent = 'Tambah Anggota';
+    document.getElementById('form-anggota').reset();
+    document.getElementById('a-warga-id').value = wargaId;
+  }
+  openModal('modal-form-anggota');
+}
+
+async function saveAnggota(e) {
+  e.preventDefault();
+  const id      = document.getElementById('a-id').value;
+  const wargaId = document.getElementById('a-warga-id').value;
+  const payload = {
+    warga_id : wargaId,
+    nama     : document.getElementById('a-nama').value.trim(),
+    hubungan : document.getElementById('a-hubungan').value
+  };
+
+  let err;
+  if (id) { const r = await db.from('anggota_keluarga').update(payload).eq('id', id); err = r.error; }
+  else     { const r = await db.from('anggota_keluarga').insert(payload); err = r.error; }
+  if (err) { showToast('Gagal menyimpan: ' + err.message, 'error'); return; }
+
+  // Sync jumlah_anggota di tabel warga
+  await syncJumlahAnggota(wargaId);
+
+  showToast(id ? 'Anggota diperbarui!' : 'Anggota ditambahkan!');
+  closeModal('modal-form-anggota');
+  logAktivitas(id ? 'Edit Anggota' : 'Tambah Anggota', payload.nama);
+
+  // Refresh modal anggota
+  const namaKK = currentWargaAnggota ? currentWargaAnggota.nama : '';
+  await showAnggotaKeluarga(wargaId, namaKK);
+  loadWarga();
+}
+
+async function hapusAnggota(anggotaId, wargaId) {
+  if (!confirm('Hapus anggota keluarga ini?')) return;
+  const { error } = await db.from('anggota_keluarga').delete().eq('id', anggotaId);
+  if (error) { showToast('Gagal hapus: ' + error.message, 'error'); return; }
+
+  await syncJumlahAnggota(wargaId);
+  showToast('Anggota dihapus!');
+  logAktivitas('Hapus Anggota', anggotaId);
+
+  const namaKK = currentWargaAnggota ? currentWargaAnggota.nama : '';
+  await showAnggotaKeluarga(wargaId, namaKK);
+  loadWarga();
+}
+
+async function syncJumlahAnggota(wargaId) {
+  const { count } = await db.from('anggota_keluarga')
+    .select('id', { count: 'exact' }).eq('warga_id', wargaId);
+  await db.from('warga').update({ jumlah_anggota: count || 0 }).eq('id', wargaId);
+}
 
 </script>
 
@@ -1507,6 +1605,49 @@ function tampilkanHalamanBukti(encoded) {
       <button class="btn btn-primary" onclick="downloadBuktiPDF()">⬇️ Download PDF</button>
       <button class="btn btn-outline" onclick="closeModal('modal-bukti')">Tutup</button>
     </div>
+  </div>
+</div>
+
+
+<div class="overlay" id="modal-anggota">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-anggota-judul">👨‍👩‍👧‍👦 Anggota Keluarga</span>
+      <button class="modal-close" onclick="closeModal('modal-anggota')">✕</button>
+    </div>
+    <div id="modal-anggota-content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-form-anggota">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-form-anggota-title">Tambah Anggota</span>
+      <button class="modal-close" onclick="closeModal('modal-form-anggota')">✕</button>
+    </div>
+    <form id="form-anggota" onsubmit="saveAnggota(event)">
+      <div class="form-group">
+        <label>Nama Lengkap *</label>
+        <input type="text" id="a-nama" placeholder="Nama lengkap anggota" required>
+      </div>
+      <div class="form-group">
+        <label>Hubungan Keluarga *</label>
+        <select id="a-hubungan">
+          <option value="Kepala Keluarga">Kepala Keluarga</option>
+          <option value="Istri">Istri</option>
+          <option value="Anak">Anak</option>
+          <option value="Orang Tua">Orang Tua</option>
+          <option value="Saudara">Saudara</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </div>
+      <input type="hidden" id="a-id">
+      <input type="hidden" id="a-warga-id">
+      <div class="flex-row">
+        <button type="submit" class="btn btn-primary">💾 Simpan</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-form-anggota')">Batal</button>
+      </div>
+    </form>
   </div>
 </div>
 
