@@ -431,6 +431,11 @@ function buatPesanWA(warga, iuran) {
   const bulanLabel= `${bulanNama[iuran.bulan]} ${iuran.tahun}`;
   const linkBukti = generateBuktiLink(warga, iuran);
 
+  // Rincian iuran hanya tampil saat keterangan = akomodasi
+  const rincian = iuran.keterangan === 'akomodasi'
+    ? '\nRincian Iuran anda :\nRp.45.000 untuk sampah, keamanan, rukem.\nRp.5.000 untuk kas RT'
+    : '';
+
   return `Yth. Bapak/Ibu *${warga.nama_kk}*
 
 Pembayaran iuran bulan *${bulanLabel}* telah kami terima.
@@ -439,12 +444,12 @@ Pembayaran iuran bulan *${bulanLabel}* telah kami terima.
 🏠 No. Rumah : Blok ${warga.blok}-${warga.nomor_rumah}
 💰 Nominal   : ${nominal}
 📅 Tgl Bayar : ${tglBayar}
+${rincian}
+Terima kasih atas kepercayaan dan partisipasi aktif Bapak/Ibu. Bersama kita wujudkan lingkungan Villa Bintaro Asri yang nyaman dan harmonis 🤝
+*RT 03 RW 12 Villa Bintaro Asri*
 
 🖼️ Bukti pembayaran:
-${linkBukti}
-
-Terima kasih atas kepercayaan dan partisipasi aktif Bapak/Ibu. Bersama kita wujudkan lingkungan Villa Bintaro Asri yang nyaman dan harmonis 🤝
-*RT 03 RW 12 Villa Bintaro Asri*`;
+${linkBukti}`;
 }
 
 function kirimWAWarga(nomorHP, pesanTeks) {
