@@ -297,7 +297,20 @@
         <select id="i-status"><option value="lunas">✅ Lunas</option><option value="belum">❌ Belum Bayar</option></select>
       </div>
       <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="i-nominal" value="50000" min="0"></div>
-      <div class="form-group"><label>Tanggal Bayar</label><input type="date" id="i-tglbayar"></div>
+      <div class="form-group">
+        <label>Tagihan Bulan</label>
+        <div style="display:flex;gap:8px;">
+          <select id="i-bulan-tagihan" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+            <option value="1">Januari</option><option value="2">Februari</option>
+            <option value="3">Maret</option><option value="4">April</option>
+            <option value="5">Mei</option><option value="6">Juni</option>
+            <option value="7">Juli</option><option value="8">Agustus</option>
+            <option value="9">September</option><option value="10">Oktober</option>
+            <option value="11">November</option><option value="12">Desember</option>
+          </select>
+          <select id="i-tahun-tagihan" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
+        </div>
+      </div>
       <div class="form-group">
         <label>Keterangan</label>
         <select id="i-ket">
@@ -908,22 +921,43 @@ function filterIuran(q) {
   renderIuran(allIuranData.filter(w=>w.nama_kk.toLowerCase().includes(lq)||w.blok.toLowerCase().includes(lq)));
 }
 function showModalIuran(wargaId, nama, iuranId) {
-  const item=allIuranData.find(w=>w.id===wargaId);
-  document.getElementById('modal-iuran-nama').textContent=nama;
-  document.getElementById('i-warga-id').value=wargaId;
-  document.getElementById('i-id').value=iuranId||'';
-  if (item&&item.iuran) {
-    document.getElementById('i-status').value=item.iuran.status;
-    document.getElementById('i-nominal').value=item.iuran.nominal||50000;
-    document.getElementById('i-tglbayar').value=item.iuran.tgl_bayar?item.iuran.tgl_bayar.slice(0,10):'';
-    // Set dropdown keterangan — hanya nilai yg valid
-    const ketVal = item.iuran.keterangan||'';
-    const validKet = ['akomodasi','cicil'];
-    document.getElementById('i-ket').value = validKet.includes(ketVal) ? ketVal : '';
+  const item = allIuranData.find(w => w.id === wargaId);
+  document.getElementById('modal-iuran-nama').textContent = nama;
+  document.getElementById('i-warga-id').value = wargaId;
+  document.getElementById('i-id').value = iuranId || '';
+
+  // Isi dropdown tahun tagihan
+  const selTahun = document.getElementById('i-tahun-tagihan');
+  const now = new Date();
+  selTahun.innerHTML = '';
+  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
+    selTahun.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
+  }
+
+  // Default tagihan bulan = filter layar
+  const bulanFilter = parseInt(document.getElementById('filter-bulan-iuran').value);
+  const tahunFilter = parseInt(document.getElementById('filter-tahun-iuran').value);
+
+  if (item && item.iuran) {
+    document.getElementById('i-status').value = item.iuran.status;
+    document.getElementById('i-nominal').value = item.iuran.nominal || 50000;
+    // Set tagihan bulan dari data yang ada
+    document.getElementById('i-bulan-tagihan').value = item.iuran.bulan || bulanFilter;
+    document.getElementById('i-tahun-tagihan').value = item.iuran.tahun || tahunFilter;
+    const ketVal = item.iuran.keterangan || '';
+    document.getElementById('i-ket').value = ['akomodasi','cicil'].includes(ketVal) ? ketVal : '';
   } else {
     document.getElementById('form-iuran').reset();
-    document.getElementById('i-nominal').value=50000;
-    document.getElementById('i-tglbayar').value=new Date().toISOString().slice(0,10);
+    document.getElementById('i-nominal').value = 50000;
+    // Default = filter layar
+    document.getElementById('i-bulan-tagihan').value = bulanFilter;
+    document.getElementById('i-tahun-tagihan').value = tahunFilter;
+    // Re-populate tahun setelah reset
+    selTahun.innerHTML = '';
+    for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
+      selTahun.innerHTML += `<option value="${y}" ${y===tahunFilter?'selected':''}>${y}</option>`;
+    }
+    document.getElementById('i-tahun-tagihan').value = tahunFilter;
   }
   openModal('modal-iuran');
 }
@@ -931,11 +965,13 @@ async function saveIuran(e) {
   e.preventDefault();
   const iuranId  = document.getElementById('i-id').value;
   const wargaId  = document.getElementById('i-warga-id').value;
-  const bulan    = parseInt(document.getElementById('filter-bulan-iuran').value);
-  const tahun    = parseInt(document.getElementById('filter-tahun-iuran').value);
+  // Pakai tagihan bulan dari dropdown (bisa beda dari filter layar)
+  const bulan    = parseInt(document.getElementById('i-bulan-tagihan').value);
+  const tahun    = parseInt(document.getElementById('i-tahun-tagihan').value);
   const status   = document.getElementById('i-status').value;
   const nominal  = parseInt(document.getElementById('i-nominal').value) || 50000;
-  const tglBayar = document.getElementById('i-tglbayar').value || null;
+  // Tanggal bayar otomatis hari ini saat Simpan diklik
+  const tglBayar = new Date().toISOString().slice(0,10);
   const ket      = document.getElementById('i-ket').value; // 'akomodasi' | 'cicil' | ''
 
   const payload = { warga_id:wargaId, bulan, tahun, status, nominal, tgl_bayar:tglBayar, keterangan:ket };
