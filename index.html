@@ -298,7 +298,14 @@
       </div>
       <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="i-nominal" value="50000" min="0"></div>
       <div class="form-group"><label>Tanggal Bayar</label><input type="date" id="i-tglbayar"></div>
-      <div class="form-group"><label>Keterangan</label><input type="text" id="i-ket" placeholder="Opsional"></div>
+      <div class="form-group">
+        <label>Keterangan</label>
+        <select id="i-ket">
+          <option value="">— Normal —</option>
+          <option value="akomodasi">🏠 Akomodasi</option>
+          <option value="cicil">💳 Cicil</option>
+        </select>
+      </div>
       <input type="hidden" id="i-id">
       <input type="hidden" id="i-warga-id">
       <div class="flex-row">
@@ -861,7 +868,11 @@ function renderIuran(data) {
     <tr>
       <td><b>Blok ${item.blok}-${item.nomor_rumah}</b></td>
       <td>${item.nama_kk}</td>
-      <td>${item.iuran?`<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`:'<span class="badge badge-warning">Belum input</span>'}</td>
+      <td>
+        ${item.iuran?`<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`:'<span class="badge badge-warning">Belum input</span>'}
+        ${item.iuran&&item.iuran.keterangan==='cicil'?'<br><span style="font-size:10px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:8px;font-weight:700;">💳 Cicil</span>':''}
+        ${item.iuran&&item.iuran.keterangan==='akomodasi'?'<br><span style="font-size:10px;background:#EFF6FF;color:#1565C0;padding:1px 6px;border-radius:8px;font-weight:700;">🏠 Akomo</span>':''}
+      </td>
       <td style="font-size:12px;">${item.iuran?fmtDate(item.iuran.tgl_bayar):'-'}</td>
       ${isAdmin?`<td><button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button></td>`:''}
       <td style="white-space:nowrap;">${item.iuran&&item.iuran.status==='lunas'?`
@@ -884,7 +895,10 @@ function showModalIuran(wargaId, nama, iuranId) {
     document.getElementById('i-status').value=item.iuran.status;
     document.getElementById('i-nominal').value=item.iuran.nominal||50000;
     document.getElementById('i-tglbayar').value=item.iuran.tgl_bayar?item.iuran.tgl_bayar.slice(0,10):'';
-    document.getElementById('i-ket').value=item.iuran.keterangan||'';
+    // Set dropdown keterangan — hanya nilai yg valid
+    const ketVal = item.iuran.keterangan||'';
+    const validKet = ['akomodasi','cicil'];
+    document.getElementById('i-ket').value = validKet.includes(ketVal) ? ketVal : '';
   } else {
     document.getElementById('form-iuran').reset();
     document.getElementById('i-nominal').value=50000;
@@ -901,7 +915,7 @@ async function saveIuran(e) {
   const status   = document.getElementById('i-status').value;
   const nominal  = parseInt(document.getElementById('i-nominal').value) || 50000;
   const tglBayar = document.getElementById('i-tglbayar').value || null;
-  const ket      = document.getElementById('i-ket').value;
+  const ket      = document.getElementById('i-ket').value; // 'akomodasi' | 'cicil' | ''
 
   const payload = { warga_id:wargaId, bulan, tahun, status, nominal, tgl_bayar:tglBayar, keterangan:ket };
   let err;
@@ -912,29 +926,55 @@ async function saveIuran(e) {
   const warga     = allIuranData.find(w => w.id === wargaId);
   const namaWarga = warga ? warga.nama_kk : wargaId;
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const ketKas    = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
+  const ketKas        = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
+  const ketAkomodasi  = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
+  const tglHari       = tglBayar || new Date().toISOString().slice(0,10);
 
-  // Cari entri kas terkait
+  // ── Kas Masuk (iuran) ──────────────────────────────────────
   const { data: kasExisting } = await db.from('kas').select('id,nominal')
     .eq('keterangan', ketKas).eq('kategori','iuran').eq('jenis','masuk');
 
   if (status === 'lunas') {
     if (!kasExisting || kasExisting.length === 0) {
-      // Insert kas baru
       await db.from('kas').insert({
-        tanggal: tglBayar || new Date().toISOString().slice(0,10),
-        jenis: 'masuk', nominal, keterangan: ketKas, kategori: 'iuran', created_by: 'auto'
+        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas, kategori:'iuran', created_by:'auto'
       });
     } else {
-      // Update nominal & tanggal
-      await db.from('kas').update({
-        nominal, tanggal: tglBayar || new Date().toISOString().slice(0,10)
-      }).eq('id', kasExisting[0].id);
+      await db.from('kas').update({ nominal, tanggal:tglHari }).eq('id', kasExisting[0].id);
     }
+
+    // ── Kas Keluar Akomodasi (jika dipilih) ───────────────────
+    const NOMINAL_AKOMODASI = 45000;
+    const { data: kasAkomo } = await db.from('kas').select('id')
+      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
+
+    if (ket === 'akomodasi') {
+      if (!kasAkomo || kasAkomo.length === 0) {
+        // Insert kas keluar akomodasi baru
+        await db.from('kas').insert({
+          tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
+          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto'
+        });
+      } else {
+        // Update tanggal saja (nominal tetap 45.000)
+        await db.from('kas').update({ tanggal:tglHari }).eq('id', kasAkomo[0].id);
+      }
+    } else {
+      // Keterangan bukan akomodasi → hapus kas akomodasi jika ada
+      if (kasAkomo && kasAkomo.length > 0) {
+        for (const k of kasAkomo) await db.from('kas').delete().eq('id', k.id);
+      }
+    }
+
   } else {
-    // Belum bayar → hapus kas terkait
+    // Status belum bayar → hapus kas masuk & kas akomodasi terkait
     if (kasExisting && kasExisting.length > 0) {
       for (const k of kasExisting) await db.from('kas').delete().eq('id', k.id);
+    }
+    const { data: kasAkomoHapus } = await db.from('kas').select('id')
+      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
+    if (kasAkomoHapus && kasAkomoHapus.length > 0) {
+      for (const k of kasAkomoHapus) await db.from('kas').delete().eq('id', k.id);
     }
   }
 
@@ -1489,6 +1529,8 @@ function tampilkanHalamanBukti(encoded) {
           </table>
           <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px;text-align:center;margin-bottom:14px;">
             <span style="font-size:14px;font-weight:800;color:#15803D;">✅ Pembayaran Diterima</span>
+            ${iuran.keterangan==='cicil'?'<div style=\"margin-top:6px;\"><span style=\"background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #FDE68A;\">💳 CICIL</span></div>':''}
+            ${iuran.keterangan==='akomodasi'?'<div style=\"margin-top:6px;\"><span style=\"background:#EFF6FF;color:#1565C0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #BFDBFE;\">🏠 AKOMODASI</span></div>':''}
           </div>
           <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed #E2E8F0;border-bottom:1px dashed #E2E8F0;margin-bottom:14px;">
             <span style="font-size:12px;color:#64748B;">Diterima oleh</span>
