@@ -413,7 +413,8 @@ function generateBuktiLink(warga, iuran) {
     tahun : iuran.tahun,
     nominal: iuran.nominal,
     tgl   : iuran.tgl_bayar || '',
-    id    : iuran.id
+    id    : iuran.id,
+    keterangan: iuran.keterangan || ''
   };
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   return `https://rt-03.vercel.app?bukti=${encoded}`;
@@ -1478,7 +1479,15 @@ async function buktiKirimWA(wargaId, iuranId) {
 // ============================================================
 function tampilkanHalamanBukti(encoded) {
   try {
-    const data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    // Decode base64 dengan cara yang kompatibel semua browser
+    let jsonStr;
+    try {
+      jsonStr = decodeURIComponent(atob(encoded).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    } catch(e2) {
+      jsonStr = atob(encoded);
+    }
+    const data = JSON.parse(jsonStr);
     const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
       'Juli','Agustus','September','Oktober','November','Desember'];
     const idxBulan  = bulanNama.indexOf(data.bulan);
@@ -1529,8 +1538,8 @@ function tampilkanHalamanBukti(encoded) {
           </table>
           <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px;text-align:center;margin-bottom:14px;">
             <span style="font-size:14px;font-weight:800;color:#15803D;">✅ Pembayaran Diterima</span>
-            ${iuran.keterangan==='cicil'?'<div style=\"margin-top:6px;\"><span style=\"background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #FDE68A;\">💳 CICIL</span></div>':''}
-            ${iuran.keterangan==='akomodasi'?'<div style=\"margin-top:6px;\"><span style=\"background:#EFF6FF;color:#1565C0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #BFDBFE;\">🏠 AKOMODASI</span></div>':''}
+            ${data.keterangan==='cicil'?'<div style="margin-top:6px;"><span style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #FDE68A;">💳 CICIL</span></div>':''}
+            ${data.keterangan==='akomodasi'?'<div style="margin-top:6px;"><span style="background:#EFF6FF;color:#1565C0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #BFDBFE;">🏠 AKOMODASI</span></div>':''}
           </div>
           <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed #E2E8F0;border-bottom:1px dashed #E2E8F0;margin-bottom:14px;">
             <span style="font-size:12px;color:#64748B;">Diterima oleh</span>
