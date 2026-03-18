@@ -158,6 +158,9 @@
           <select id="filter-bulan-iuran" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
           <select id="filter-tahun-iuran" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
         </div>
+        <div class="filter-row" id="filter-blok-iuran">
+          <button class="filter-chip active" onclick="setFilterBlokIuran('',this)">Semua</button>
+        </div>
         <div class="search-bar">
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="Cari nama warga..." oninput="filterIuran(this.value)" id="search-iuran">
@@ -886,13 +889,32 @@ async function deleteWarga(id) {
 // ============================================================
 // IURAN
 // ============================================================
+let filterBlokIuranAktif = '';
+
 async function loadIuran() {
   const bulan=parseInt(document.getElementById('filter-bulan-iuran').value);
   const tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
-  // Semua user bisa lihat semua iuran warga
   let wargaQuery=db.from('warga').select('*').order('blok').order('nomor_rumah');
   const [resW,resI]=await Promise.all([wargaQuery, db.from('iuran').select('*').eq('bulan',bulan).eq('tahun',tahun)]);
   allIuranData=(resW.data||[]).map(w=>({...w, iuran:(resI.data||[]).find(i=>i.warga_id===w.id)||null}));
+
+  // Generate filter blok chips
+  const isAdmin = currentUser === 'admin';
+  if (isAdmin) {
+    const bloks = [...new Set(allIuranData.map(w => w.blok))].sort();
+    const fc = document.getElementById('filter-blok-iuran');
+    if (fc) {
+      fc.innerHTML = `<button class="filter-chip ${filterBlokIuranAktif===''?'active':''}" onclick="setFilterBlokIuran('',this)">Semua</button>`;
+      bloks.forEach(b => {
+        const btn = document.createElement('button');
+        btn.className = `filter-chip ${filterBlokIuranAktif===b?'active':''}`;
+        btn.textContent = 'Blok ' + b;
+        btn.onclick = () => setFilterBlokIuran(b, btn);
+        fc.appendChild(btn);
+      });
+    }
+  }
+
   renderIuran(allIuranData);
 }
 function renderIuran(data) {
@@ -916,9 +938,20 @@ function renderIuran(data) {
     </tr>`).join('');
 }
 function filterIuran(q) {
-  if (!q) { renderIuran(allIuranData); return; }
-  const lq=q.toLowerCase();
-  renderIuran(allIuranData.filter(w=>w.nama_kk.toLowerCase().includes(lq)||w.blok.toLowerCase().includes(lq)));
+  let data = allIuranData;
+  if (filterBlokIuranAktif) data = data.filter(w => w.blok === filterBlokIuranAktif);
+  if (q) {
+    const lq = q.toLowerCase();
+    data = data.filter(w => w.nama_kk.toLowerCase().includes(lq) || w.blok.toLowerCase().includes(lq));
+  }
+  renderIuran(data);
+}
+
+function setFilterBlokIuran(blok, btn) {
+  filterBlokIuranAktif = blok;
+  document.querySelectorAll('#filter-blok-iuran .filter-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterIuran(document.getElementById('search-iuran').value);
 }
 function showModalIuran(wargaId, nama, iuranId) {
   const item = allIuranData.find(w => w.id === wargaId);
