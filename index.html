@@ -193,7 +193,10 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">📋 Riwayat Kas</span>
-          <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄 Sinkron Blok</button>
+            <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
+          </div>
         </div>
         <div class="kas-filter-row">
           <select id="filter-kas-jenis" onchange="loadKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
@@ -210,7 +213,7 @@
           <table>
             <thead>
               <tr>
-                <th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th>Nominal</th>
+                <th>Tanggal</th><th>Keterangan</th><th>Blok</th><th>Jenis</th><th>Nominal</th>
                 <th id="th-kas-aksi" style="display:none">Aksi</th>
               </tr>
             </thead>
@@ -625,7 +628,7 @@ function startApp() {
   const isAdmin = currentUser === 'admin';
   document.getElementById('user-badge').textContent = isAdmin
     ? '👮 Admin' : ('🏠 ' + currentUser.blok + '-' + currentUser.nomor_rumah);
-  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan'].forEach(id => {
+  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-sinkron-kas'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = isAdmin ? 'block' : 'none';
   });
   const logCard   = document.getElementById('log-card');   if (logCard)   logCard.style.display   = isAdmin ? 'block' : 'none';
@@ -1027,10 +1030,15 @@ async function saveIuran(e) {
   if (status === 'lunas') {
     if (!kasExisting || kasExisting.length === 0) {
       await db.from('kas').insert({
-        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas, kategori:'iuran', created_by:'auto'
+        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
+        kategori:'iuran', created_by:'auto',
+        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
       });
     } else {
-      await db.from('kas').update({ nominal, tanggal:tglHari }).eq('id', kasExisting[0].id);
+      await db.from('kas').update({
+        nominal, tanggal:tglHari,
+        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
+      }).eq('id', kasExisting[0].id);
     }
 
     // ── Kas Keluar Akomodasi (jika dipilih) ───────────────────
@@ -1043,11 +1051,15 @@ async function saveIuran(e) {
         // Insert kas keluar akomodasi baru
         await db.from('kas').insert({
           tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
-          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto'
+          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
+          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
         });
       } else {
         // Update tanggal saja (nominal tetap 45.000)
-        await db.from('kas').update({ tanggal:tglHari }).eq('id', kasAkomo[0].id);
+        await db.from('kas').update({
+          tanggal:tglHari,
+          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
+        }).eq('id', kasAkomo[0].id);
       }
     } else {
       // Keterangan bukan akomodasi → hapus kas akomodasi jika ada
@@ -1119,11 +1131,12 @@ async function loadKas() {
 }
 function renderKas(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-kas');
-  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi pada periode ini</div></td></tr>'; return; }
+  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi pada periode ini</div></td></tr>'; return; }
   tbody.innerHTML=data.map(k=>`
     <tr>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(k.tanggal)}</td>
       <td>${k.keterangan}<br><span style="font-size:11px;color:#aaa;">${k.kategori}</span></td>
+      <td style="font-size:12px;color:#1565C0;font-weight:600;white-space:nowrap;">${k.blok_warga||'-'}</td>
       <td><span class="badge ${k.jenis==='masuk'?'badge-success':'badge-danger'}">${k.jenis}</span></td>
       <td style="white-space:nowrap;font-weight:600;color:${k.jenis==='masuk'?'#2E7D32':'#C62828'}">${rp(k.nominal)}</td>
       ${isAdmin?`<td onclick="event.stopPropagation()"><div class="flex-row">
@@ -1923,6 +1936,55 @@ async function logoutDevice(sessionId, deviceInfo) {
   showToast('Device berhasil di-logout!');
   logAktivitas('Logout Device', deviceInfo);
   showModalDevice(); // Refresh list
+}
+
+
+
+// ============================================================
+// SINKRONISASI BLOK WARGA KE DATA KAS LAMA
+// ============================================================
+async function sinkronBlokKas() {
+  showToast('Sinkronisasi dimulai...', 'info');
+
+  // Ambil semua kas yang belum ada blok_warga
+  const { data: kasList } = await db.from('kas').select('id, keterangan')
+    .is('blok_warga', null).eq('kategori', 'iuran');
+
+  const { data: kasAkomo } = await db.from('kas').select('id, keterangan')
+    .is('blok_warga', null).eq('kategori', 'operasional');
+
+  const allKasLama = [...(kasList||[]), ...(kasAkomo||[])];
+  if (!allKasLama.length) { showToast('Semua data sudah tersinkron!', 'info'); return; }
+
+  // Ambil semua warga
+  const { data: wargaList } = await db.from('warga').select('id, nama_kk, blok, nomor_rumah');
+  if (!wargaList) return;
+
+  let updated = 0;
+  for (const kas of allKasLama) {
+    // Cari nama warga dari keterangan kas
+    // Format: "Iuran Maret 2026 - Nama Warga" atau "Akomodasi warga - Nama Warga Maret 2026"
+    let namaWarga = null;
+    const matchIuran = kas.keterangan.match(/Iuran .+ - (.+)$/);
+    const matchAkomo = kas.keterangan.match(/Akomodasi warga - (.+?) \w+ \d{4}$/);
+    if (matchIuran) namaWarga = matchIuran[1].trim();
+    else if (matchAkomo) namaWarga = matchAkomo[1].trim();
+
+    if (namaWarga) {
+      const warga = wargaList.find(w =>
+        w.nama_kk.toLowerCase() === namaWarga.toLowerCase()
+      );
+      if (warga) {
+        await db.from('kas').update({
+          blok_warga: `Blok ${warga.blok}-${warga.nomor_rumah}`
+        }).eq('id', kas.id);
+        updated++;
+      }
+    }
+  }
+
+  showToast(`Sinkronisasi selesai! ${updated} data diperbarui.`);
+  loadKas();
 }
 
 </script>
