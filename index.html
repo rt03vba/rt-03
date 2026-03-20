@@ -123,7 +123,10 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">👥 Daftar Warga</span>
-          <button class="btn btn-primary btn-sm" id="btn-tambah-warga" onclick="showModalTambahWarga()" style="display:none">+ Tambah</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" id="btn-sinkron-warga" onclick="sinkronSemuaWarga()" style="display:none;font-size:11px;">🔄 Sinkron</button>
+            <button class="btn btn-primary btn-sm" id="btn-tambah-warga" onclick="showModalTambahWarga()" style="display:none">+ Tambah</button>
+          </div>
         </div>
         <div class="search-bar">
           <span class="search-icon">🔍</span>
@@ -193,10 +196,7 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">📋 Riwayat Kas</span>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄 Sinkron Blok</button>
-            <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
-          </div>
+          <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
         </div>
         <div class="kas-filter-row">
           <select id="filter-kas-jenis" onchange="loadKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
@@ -213,7 +213,7 @@
           <table>
             <thead>
               <tr>
-                <th>Tanggal</th><th>Keterangan</th><th>Blok</th><th>Jenis</th><th>Nominal</th>
+                <th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th>Nominal</th>
                 <th id="th-kas-aksi" style="display:none">Aksi</th>
               </tr>
             </thead>
@@ -628,7 +628,7 @@ function startApp() {
   const isAdmin = currentUser === 'admin';
   document.getElementById('user-badge').textContent = isAdmin
     ? '👮 Admin' : ('🏠 ' + currentUser.blok + '-' + currentUser.nomor_rumah);
-  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-sinkron-kas'].forEach(id => {
+  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-sinkron-warga'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = isAdmin ? 'block' : 'none';
   });
   const logCard   = document.getElementById('log-card');   if (logCard)   logCard.style.display   = isAdmin ? 'block' : 'none';
@@ -878,6 +878,11 @@ async function saveWarga(e) {
     await db.from('warga').update({ jumlah_anggota: anggotaData.length || jumlah }).eq('id', wargaId);
   }
 
+  // Jika edit warga → sync keterangan & blok_warga di kas
+  if (id && wargaId) {
+    await sinkronKasWarga(wargaId, payload.nama_kk, payload.blok, payload.nomor_rumah);
+  }
+
   showToast(id?'Data warga diperbarui!':'Warga berhasil ditambahkan!');
   closeModal('modal-warga'); document.getElementById('form-warga').reset();
   logAktivitas(id?'Edit Warga':'Tambah Warga', payload.nama_kk); loadWarga();
@@ -1030,15 +1035,10 @@ async function saveIuran(e) {
   if (status === 'lunas') {
     if (!kasExisting || kasExisting.length === 0) {
       await db.from('kas').insert({
-        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
-        kategori:'iuran', created_by:'auto',
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
+        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas, kategori:'iuran', created_by:'auto'
       });
     } else {
-      await db.from('kas').update({
-        nominal, tanggal:tglHari,
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      }).eq('id', kasExisting[0].id);
+      await db.from('kas').update({ nominal, tanggal:tglHari }).eq('id', kasExisting[0].id);
     }
 
     // ── Kas Keluar Akomodasi (jika dipilih) ───────────────────
@@ -1051,15 +1051,11 @@ async function saveIuran(e) {
         // Insert kas keluar akomodasi baru
         await db.from('kas').insert({
           tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
-          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
+          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto'
         });
       } else {
         // Update tanggal saja (nominal tetap 45.000)
-        await db.from('kas').update({
-          tanggal:tglHari,
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        }).eq('id', kasAkomo[0].id);
+        await db.from('kas').update({ tanggal:tglHari }).eq('id', kasAkomo[0].id);
       }
     } else {
       // Keterangan bukan akomodasi → hapus kas akomodasi jika ada
@@ -1131,12 +1127,11 @@ async function loadKas() {
 }
 function renderKas(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-kas');
-  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi pada periode ini</div></td></tr>'; return; }
+  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi pada periode ini</div></td></tr>'; return; }
   tbody.innerHTML=data.map(k=>`
     <tr>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(k.tanggal)}</td>
       <td>${k.keterangan}<br><span style="font-size:11px;color:#aaa;">${k.kategori}</span></td>
-      <td style="font-size:12px;color:#1565C0;font-weight:600;white-space:nowrap;">${k.blok_warga||'-'}</td>
       <td><span class="badge ${k.jenis==='masuk'?'badge-success':'badge-danger'}">${k.jenis}</span></td>
       <td style="white-space:nowrap;font-weight:600;color:${k.jenis==='masuk'?'#2E7D32':'#C62828'}">${rp(k.nominal)}</td>
       ${isAdmin?`<td onclick="event.stopPropagation()"><div class="flex-row">
@@ -1941,50 +1936,66 @@ async function logoutDevice(sessionId, deviceInfo) {
 
 
 // ============================================================
-// SINKRONISASI BLOK WARGA KE DATA KAS LAMA
+// SINKRONISASI KAS ↔ DATA WARGA
 // ============================================================
-async function sinkronBlokKas() {
-  showToast('Sinkronisasi dimulai...', 'info');
+async function sinkronKasWarga(wargaId, namaKK, blok, nomorRumah) {
+  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
+    'Juli','Agustus','September','Oktober','November','Desember'];
+  const blokWarga = `Blok ${blok}-${nomorRumah}`;
 
-  // Ambil semua kas yang belum ada blok_warga
-  const { data: kasList } = await db.from('kas').select('id, keterangan')
-    .is('blok_warga', null).eq('kategori', 'iuran');
+  // Ambil semua iuran warga ini untuk dapat keterangan kas
+  const { data: iuranList } = await db.from('iuran').select('bulan,tahun')
+    .eq('warga_id', wargaId);
+  if (!iuranList || !iuranList.length) return;
 
-  const { data: kasAkomo } = await db.from('kas').select('id, keterangan')
-    .is('blok_warga', null).eq('kategori', 'operasional');
+  for (const iuran of iuranList) {
+    const bulanStr = bulanNama[iuran.bulan];
+    const tahun    = iuran.tahun;
 
-  const allKasLama = [...(kasList||[]), ...(kasAkomo||[])];
-  if (!allKasLama.length) { showToast('Semua data sudah tersinkron!', 'info'); return; }
+    // Update kas masuk iuran — cocokkan pola lama, update ke nama & blok baru
+    const { data: kasIuran } = await db.from('kas').select('id,keterangan')
+      .eq('kategori','iuran').eq('jenis','masuk')
+      .ilike('keterangan', `Iuran ${bulanStr} ${tahun}%`);
 
-  // Ambil semua warga
-  const { data: wargaList } = await db.from('warga').select('id, nama_kk, blok, nomor_rumah');
-  if (!wargaList) return;
+    for (const k of (kasIuran||[])) {
+      // Cek apakah keterangan ini milik warga ini (berdasarkan nama lama atau blok)
+      const newKet = `Iuran ${bulanStr} ${tahun} - ${namaKK}`;
+      await db.from('kas').update({
+        keterangan: newKet,
+        blok_warga: blokWarga
+      }).eq('id', k.id);
+    }
 
-  let updated = 0;
-  for (const kas of allKasLama) {
-    // Cari nama warga dari keterangan kas
-    // Format: "Iuran Maret 2026 - Nama Warga" atau "Akomodasi warga - Nama Warga Maret 2026"
-    let namaWarga = null;
-    const matchIuran = kas.keterangan.match(/Iuran .+ - (.+)$/);
-    const matchAkomo = kas.keterangan.match(/Akomodasi warga - (.+?) \w+ \d{4}$/);
-    if (matchIuran) namaWarga = matchIuran[1].trim();
-    else if (matchAkomo) namaWarga = matchAkomo[1].trim();
+    // Update kas keluar akomodasi
+    const { data: kasAkomo } = await db.from('kas').select('id,keterangan')
+      .eq('kategori','operasional').eq('jenis','keluar')
+      .ilike('keterangan', `Akomodasi warga%${bulanStr} ${tahun}%`);
 
-    if (namaWarga) {
-      const warga = wargaList.find(w =>
-        w.nama_kk.toLowerCase() === namaWarga.toLowerCase()
-      );
-      if (warga) {
-        await db.from('kas').update({
-          blok_warga: `Blok ${warga.blok}-${warga.nomor_rumah}`
-        }).eq('id', kas.id);
-        updated++;
-      }
+    for (const k of (kasAkomo||[])) {
+      const newKet = `Akomodasi warga - ${namaKK} ${bulanStr} ${tahun}`;
+      await db.from('kas').update({
+        keterangan: newKet,
+        blok_warga: blokWarga
+      }).eq('id', k.id);
     }
   }
+}
 
-  showToast(`Sinkronisasi selesai! ${updated} data diperbarui.`);
-  loadKas();
+async function sinkronSemuaWarga() {
+  if (!confirm('Sinkronkan semua data kas dengan data warga terkini?')) return;
+  showToast('Sinkronisasi dimulai...', 'info');
+
+  const { data: wargaList } = await db.from('warga').select('id,nama_kk,blok,nomor_rumah');
+  if (!wargaList || !wargaList.length) { showToast('Tidak ada data warga', 'error'); return; }
+
+  let count = 0;
+  for (const w of wargaList) {
+    await sinkronKasWarga(w.id, w.nama_kk, w.blok, w.nomor_rumah);
+    count++;
+  }
+
+  showToast(`Sinkronisasi selesai! ${count} warga diproses.`);
+  logAktivitas('Sinkron Data Warga-Kas', `${count} warga`);
 }
 
 </script>
