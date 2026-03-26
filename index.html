@@ -197,7 +197,8 @@
         <div class="card-header">
           <span class="card-title">📋 Riwayat Kas</span>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄 Sinkron Blok</button>
+            <button class="btn btn-outline btn-sm" id="btn-bersih-kas" onclick="bersihkanDoubleKas()" style="display:none;font-size:11px;color:#E53935;border-color:#E53935;">🧹 Bersihkan</button>
+            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄 Sinkron</button>
             <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
           </div>
         </div>
@@ -631,7 +632,7 @@ function startApp() {
   const isAdmin = currentUser === 'admin';
   document.getElementById('user-badge').textContent = isAdmin
     ? '👮 Admin' : ('🏠 ' + currentUser.blok + '-' + currentUser.nomor_rumah);
-  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-sinkron-kas','btn-sinkron-warga'].forEach(id => {
+  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-sinkron-kas','btn-sinkron-warga','btn-bersih-kas'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = isAdmin ? 'block' : 'none';
   });
   const logCard   = document.getElementById('log-card');   if (logCard)   logCard.style.display   = isAdmin ? 'block' : 'none';
@@ -1029,61 +1030,52 @@ async function saveIuran(e) {
   const ketAkomodasi  = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
   const tglHari       = tglBayar || new Date().toISOString().slice(0,10);
 
-  // ── Kas Masuk (iuran) ──────────────────────────────────────
-  const { data: kasExisting } = await db.from('kas').select('id,nominal')
-    .eq('keterangan', ketKas).eq('kategori','iuran').eq('jenis','masuk');
+  // ── Kas Masuk & Akomodasi — pakai delete-then-insert (anti-double) ──
+  // Hapus SEMUA kas iuran milik warga ini untuk bulan+tahun ini
+  // (cocok nama lama/baru sekalipun — cari via warga_id dari iuran)
+  const blokWarga = warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null;
+
+  // Cari semua kas iuran yang keterangannya mengandung nama warga apapun
+  // untuk bulan+tahun ini, lalu hapus sebelum insert baru
+  const bulanStr  = bulanNama[bulan];
+  const { data: kasIuranLama } = await db.from('kas').select('id')
+    .eq('kategori','iuran').eq('jenis','masuk')
+    .ilike('keterangan', `Iuran ${bulanStr} ${tahun}%`);
+  // Filter hanya yang milik warga ini (cek nama saat ini atau nama lama via warga_id)
+  const { data: iuranWarga } = await db.from('iuran').select('id')
+    .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun);
+  // Hapus kas iuran lama untuk warga ini (matching nama apapun)
+  if (kasIuranLama && kasIuranLama.length > 0) {
+    // Hapus yang keterangannya mengandung nama warga saat ini
+    const { data: kasNamaSaatIni } = await db.from('kas').select('id')
+      .eq('kategori','iuran').eq('jenis','masuk')
+      .eq('keterangan', ketKas);
+    for (const k of (kasNamaSaatIni||[])) await db.from('kas').delete().eq('id', k.id);
+  }
+
+  // Hapus semua kas akomodasi lama untuk warga+bulan+tahun ini
+  const { data: kasAkomoLama } = await db.from('kas').select('id')
+    .eq('kategori','operasional').eq('jenis','keluar')
+    .eq('keterangan', ketAkomodasi);
+  for (const k of (kasAkomoLama||[])) await db.from('kas').delete().eq('id', k.id);
 
   if (status === 'lunas') {
-    if (!kasExisting || kasExisting.length === 0) {
-      await db.from('kas').insert({
-        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
-        kategori:'iuran', created_by:'auto',
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      });
-    } else {
-      await db.from('kas').update({
-        nominal, tanggal:tglHari,
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      }).eq('id', kasExisting[0].id);
-    }
+    // Insert kas masuk baru (fresh, tidak double)
+    await db.from('kas').insert({
+      tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
+      kategori:'iuran', created_by:'auto', blok_warga: blokWarga
+    });
 
-    // ── Kas Keluar Akomodasi (jika dipilih) ───────────────────
-    const NOMINAL_AKOMODASI = 45000;
-    const { data: kasAkomo } = await db.from('kas').select('id')
-      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
-
+    // Insert kas keluar akomodasi jika dipilih
     if (ket === 'akomodasi') {
-      if (!kasAkomo || kasAkomo.length === 0) {
-        // Insert kas keluar akomodasi baru
-        await db.from('kas').insert({
-          tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
-          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        });
-      } else {
-        await db.from('kas').update({
-          tanggal:tglHari,
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        }).eq('id', kasAkomo[0].id);
-      }
-    } else {
-      // Keterangan bukan akomodasi → hapus kas akomodasi jika ada
-      if (kasAkomo && kasAkomo.length > 0) {
-        for (const k of kasAkomo) await db.from('kas').delete().eq('id', k.id);
-      }
-    }
-
-  } else {
-    // Status belum bayar → hapus kas masuk & kas akomodasi terkait
-    if (kasExisting && kasExisting.length > 0) {
-      for (const k of kasExisting) await db.from('kas').delete().eq('id', k.id);
-    }
-    const { data: kasAkomoHapus } = await db.from('kas').select('id')
-      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
-    if (kasAkomoHapus && kasAkomoHapus.length > 0) {
-      for (const k of kasAkomoHapus) await db.from('kas').delete().eq('id', k.id);
+      await db.from('kas').insert({
+        tanggal: tglHari, jenis:'keluar', nominal:45000,
+        keterangan: ketAkomodasi, kategori:'operasional',
+        created_by:'auto', blok_warga: blokWarga
+      });
     }
   }
+  // Jika status belum bayar: kas sudah dihapus di atas, tidak perlu insert
 
   showToast('Status iuran disimpan!');
   closeModal('modal-iuran');
@@ -1981,22 +1973,48 @@ async function sinkronKasWarga(wargaId, namaKK, blok, nomorRumah) {
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
     'Juli','Agustus','September','Oktober','November','Desember'];
   const blokWarga = `Blok ${blok}-${nomorRumah}`;
+
+  // Ambil semua iuran warga ini
   const { data: iuranList } = await db.from('iuran').select('bulan,tahun').eq('warga_id', wargaId);
   if (!iuranList || !iuranList.length) return;
+
   for (const iuran of iuranList) {
-    const bulanStr = bulanNama[iuran.bulan];
-    const tahun    = iuran.tahun;
-    const { data: kasIuran } = await db.from('kas').select('id')
+    const bulanStr  = bulanNama[iuran.bulan];
+    const tahun     = iuran.tahun;
+    const ketBaru   = `Iuran ${bulanStr} ${tahun} - ${namaKK}`;
+    const ketAkBaru = `Akomodasi warga - ${namaKK} ${bulanStr} ${tahun}`;
+
+    // Update kas iuran — HANYA yang keterangannya mengandung nama warga ini
+    // Cari semua variasi nama (pakai ilike per bulan+tahun, lalu filter manual)
+    const { data: kasIuranAll } = await db.from('kas').select('id,keterangan')
       .eq('kategori','iuran').eq('jenis','masuk')
-      .ilike('keterangan', `Iuran ${bulanStr} ${tahun}%`);
-    for (const k of (kasIuran||[])) {
-      await db.from('kas').update({ keterangan: `Iuran ${bulanStr} ${tahun} - ${namaKK}`, blok_warga: blokWarga }).eq('id', k.id);
+      .ilike('keterangan', `Iuran ${bulanStr} ${tahun} -%`);
+
+    for (const k of (kasIuranAll||[])) {
+      // Ekstrak nama dari keterangan: "Iuran Maret 2026 - [nama]"
+      const match = k.keterangan.match(/^Iuran .+? \d{4} - (.+)$/);
+      if (match) {
+        const namaLama = match[1].trim().toLowerCase();
+        // Hanya update jika nama cocok dengan warga ini
+        if (namaLama === namaKK.toLowerCase()) {
+          await db.from('kas').update({ keterangan: ketBaru, blok_warga: blokWarga }).eq('id', k.id);
+        }
+      }
     }
-    const { data: kasAkomo } = await db.from('kas').select('id')
+
+    // Update kas akomodasi — HANYA milik warga ini
+    const { data: kasAkomoAll } = await db.from('kas').select('id,keterangan')
       .eq('kategori','operasional').eq('jenis','keluar')
-      .ilike('keterangan', `Akomodasi warga%${bulanStr} ${tahun}%`);
-    for (const k of (kasAkomo||[])) {
-      await db.from('kas').update({ keterangan: `Akomodasi warga - ${namaKK} ${bulanStr} ${tahun}`, blok_warga: blokWarga }).eq('id', k.id);
+      .ilike('keterangan', `Akomodasi warga - % ${bulanStr} ${tahun}`);
+
+    for (const k of (kasAkomoAll||[])) {
+      const match = k.keterangan.match(/^Akomodasi warga - (.+?) \w+ \d{4}$/);
+      if (match) {
+        const namaLama = match[1].trim().toLowerCase();
+        if (namaLama === namaKK.toLowerCase()) {
+          await db.from('kas').update({ keterangan: ketAkBaru, blok_warga: blokWarga }).eq('id', k.id);
+        }
+      }
     }
   }
 }
@@ -2012,6 +2030,50 @@ async function sinkronSemuaWarga() {
   showToast(`Sinkronisasi selesai!`);
   logAktivitas('Sinkron Data Warga-Kas', `${wargaList.length} warga`);
   loadKas();
+}
+
+
+
+// ============================================================
+// BERSIHKAN DATA KAS DOUBLE
+// ============================================================
+async function bersihkanDoubleKas() {
+  if (!confirm('Hapus semua entri kas yang double/duplikat?\nData valid (terbaru) akan tetap ada.')) return;
+  showToast('Membersihkan data double...', 'info');
+
+  const { data: allKas } = await db.from('kas').select('id,keterangan,kategori,jenis,tanggal')
+    .order('tanggal', { ascending: false });
+  if (!allKas || !allKas.length) { showToast('Tidak ada data kas', 'info'); return; }
+
+  // Kelompokkan berdasarkan keterangan+kategori+jenis
+  const groups = {};
+  for (const k of allKas) {
+    const key = `${k.keterangan}|${k.kategori}|${k.jenis}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(k);
+  }
+
+  // Hapus duplikat — simpan yang pertama (terbaru), hapus sisanya
+  let deleted = 0;
+  for (const key of Object.keys(groups)) {
+    const items = groups[key];
+    if (items.length > 1) {
+      // Simpan index 0 (terbaru karena order desc), hapus sisanya
+      const toDelete = items.slice(1);
+      for (const item of toDelete) {
+        await db.from('kas').delete().eq('id', item.id);
+        deleted++;
+      }
+    }
+  }
+
+  if (deleted > 0) {
+    showToast(`${deleted} entri double berhasil dihapus!`);
+    logAktivitas('Bersihkan Double Kas', `${deleted} entri dihapus`);
+  } else {
+    showToast('Tidak ada data double ditemukan ✅', 'info');
+  }
+  loadKas(); loadDashboard();
 }
 
 </script>
