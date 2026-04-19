@@ -229,7 +229,9 @@
             <option value="09">September</option><option value="10">Oktober</option>
             <option value="11">November</option><option value="12">Desember</option>
           </select>
-          <select id="filter-kas-tahun" onchange="applyFilterKas()" style="width:95px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;" id="filter-kas-tahun"></select>
+          <select id="filter-kas-tahun" onchange="applyFilterKas()" style="width:95px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+            <option value="">Semua Tahun</option>
+          </select>
           <button class="btn btn-outline btn-sm" onclick="resetFilterKas()" style="white-space:nowrap;padding:10px 12px;">↺ Reset</button>
         </div>
         <div class="flex-row" style="margin-bottom:12px;">
@@ -1147,15 +1149,13 @@ async function loadKas() {
   if (error) { showToast('Gagal memuat data kas','error'); return; }
   allKasData = data || [];
 
-  // Isi dropdown tahun dari data yang ada
+  // Isi dropdown tahun dari data yang ada — default Semua Tahun (tidak auto-select)
   const tahunEl = document.getElementById('filter-kas-tahun');
   if (tahunEl) {
     const years = [...new Set(allKasData.map(k => k.tanggal ? k.tanggal.slice(0,4) : null).filter(Boolean))].sort().reverse();
-    const nowYear = new Date().getFullYear().toString();
     const selVal = tahunEl.value || '';
     tahunEl.innerHTML = '<option value="">Semua Tahun</option>' +
-      years.map(y => `<option value="${y}" ${y===nowYear&&!selVal?'selected':''}>${y}</option>`).join('');
-    if (selVal) tahunEl.value = selVal;
+      years.map(y => `<option value="${y}" ${y===selVal?'selected':''}>${y}</option>`).join('');
   }
 
   // Summary selalu dari SEMUA data
