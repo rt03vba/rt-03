@@ -239,6 +239,24 @@
           <button class="btn btn-outline btn-sm" onclick="exportKasExcel()">📊 Excel</button>
         </div>
         <div class="table-wrap">
+          <!-- Ringkasan filter bulan -->
+          <div id="kas-filter-summary" style="display:none;margin-bottom:12px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:90px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px 12px;text-align:center;">
+                <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Total Masuk</div>
+                <div id="summary-masuk" style="font-size:15px;font-weight:800;color:#2E7D32;">Rp 0</div>
+              </div>
+              <div style="flex:1;min-width:90px;background:#FFF5F5;border:1.5px solid #FECACA;border-radius:10px;padding:10px 12px;text-align:center;">
+                <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Total Keluar</div>
+                <div id="summary-keluar" style="font-size:15px;font-weight:800;color:#C62828;">Rp 0</div>
+              </div>
+              <div style="flex:1;min-width:90px;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 12px;text-align:center;">
+                <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Saldo</div>
+                <div id="summary-saldo" style="font-size:15px;font-weight:800;color:#1565C0;">Rp 0</div>
+              </div>
+            </div>
+          </div>
+
           <table>
             <thead>
               <tr>
@@ -246,7 +264,7 @@
                 <th id="th-kas-aksi" style="display:none">Aksi</th>
               </tr>
             </thead>
-            <tbody id="tabel-kas"><tr><td colspan="5" class="loading">Memuat...</td></tr></tbody>
+            <tbody id="tabel-kas"><tr><td colspan="6" class="loading">Memuat...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1144,12 +1162,12 @@ async function generateIuranBulanan() {
 // KAS RT
 // ============================================================
 async function loadKas() {
-  // Ambil SEMUA data (tanpa filter) untuk summary & dropdown tahun
+  // Ambil SEMUA data tanpa filter apapun
   const { data, error } = await db.from('kas').select('*').order('tanggal', {ascending: false});
   if (error) { showToast('Gagal memuat data kas','error'); return; }
   allKasData = data || [];
 
-  // Isi dropdown tahun dari data yang ada — default Semua Tahun (tidak auto-select)
+  // Isi dropdown tahun dari data yang ada (default = Semua Tahun)
   const tahunEl = document.getElementById('filter-kas-tahun');
   if (tahunEl) {
     const years = [...new Set(allKasData.map(k => k.tanggal ? k.tanggal.slice(0,4) : null).filter(Boolean))].sort().reverse();
@@ -1158,7 +1176,7 @@ async function loadKas() {
       years.map(y => `<option value="${y}" ${y===selVal?'selected':''}>${y}</option>`).join('');
   }
 
-  // Summary selalu dari SEMUA data
+  // Summary dari SEMUA data (tidak terpengaruh filter)
   const totalMasuk  = allKasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
   const totalKeluar = allKasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
   document.getElementById('kas-masuk-total').textContent = rp(totalMasuk);
@@ -1169,10 +1187,10 @@ async function loadKas() {
 }
 
 function applyFilterKas() {
-  const jenis    = document.getElementById('filter-kas-jenis')?.value || '';
+  const jenis    = document.getElementById('filter-kas-jenis')?.value    || '';
   const kategori = document.getElementById('filter-kas-kategori')?.value || '';
-  const bulan    = document.getElementById('filter-kas-bulan')?.value || '';
-  const tahun    = document.getElementById('filter-kas-tahun')?.value || '';
+  const bulan    = document.getElementById('filter-kas-bulan')?.value    || '';
+  const tahun    = document.getElementById('filter-kas-tahun')?.value    || '';
 
   let filtered = allKasData;
   if (jenis)    filtered = filtered.filter(k => k.jenis === jenis);
@@ -1180,19 +1198,48 @@ function applyFilterKas() {
   if (bulan)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(5,7) === bulan);
   if (tahun)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(0,4) === tahun);
 
+  // Tampilkan summary jika ada filter bulan atau tahun aktif
+  const summaryEl = document.getElementById('kas-filter-summary');
+  if (summaryEl) {
+    const hasFilter = bulan || tahun;
+    summaryEl.style.display = hasFilter ? 'block' : 'none';
+    if (hasFilter) {
+      const totalMasuk  = filtered.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
+      const totalKeluar = filtered.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
+      const saldo       = totalMasuk - totalKeluar;
+      document.getElementById('summary-masuk').textContent  = rp(totalMasuk);
+      document.getElementById('summary-keluar').textContent = rp(totalKeluar);
+      const saldoEl = document.getElementById('summary-saldo');
+      saldoEl.textContent = rp(Math.abs(saldo));
+      saldoEl.style.color = saldo >= 0 ? '#1565C0' : '#C62828';
+      // Tambah label bulan/tahun di summary
+      const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
+        'Juli','Agustus','September','Oktober','November','Desember'];
+      const label = [bulan ? bulanNama[parseInt(bulan)] : '', tahun].filter(Boolean).join(' ');
+      summaryEl.querySelector('div').insertAdjacentHTML('afterbegin',
+        `<div style="font-size:12px;font-weight:700;color:#1E293B;margin-bottom:8px;text-align:left;">
+          📅 Ringkasan: ${label}
+         </div>`);
+      // Hapus label duplikat
+      const labels = summaryEl.querySelectorAll('div > div:first-child');
+      if (labels.length > 1) for(let i=1;i<labels.length;i++) labels[i].remove();
+    }
+  }
+
   renderKas(filtered);
 }
 
 function resetFilterKas() {
-  document.getElementById('filter-kas-jenis').value    = '';
-  document.getElementById('filter-kas-kategori').value = '';
-  document.getElementById('filter-kas-bulan').value    = '';
-  document.getElementById('filter-kas-tahun').value    = '';
+  const els = ['filter-kas-jenis','filter-kas-kategori','filter-kas-bulan','filter-kas-tahun'];
+  els.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  // Sembunyikan summary saat reset
+  const summaryEl = document.getElementById('kas-filter-summary');
+  if (summaryEl) summaryEl.style.display = 'none';
   renderKas(allKasData);
 }
 function renderKas(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-kas');
-  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi pada periode ini</div></td></tr>'; return; }
+  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi</div></td></tr>'; return; }
   tbody.innerHTML=data.map(k=>`
     <tr>
       <td style="font-size:12px;white-space:nowrap;">${fmtDate(k.tanggal)}</td>
@@ -1238,18 +1285,9 @@ async function deleteKas(id) {
 }
 function exportKasPDF() {
   const { jsPDF }=window.jspdf, doc=new jsPDF();
-  // Export data yang sedang ditampilkan (sesuai filter aktif)
-  const jenis    = document.getElementById('filter-kas-jenis')?.value || '';
-  const kategori = document.getElementById('filter-kas-kategori')?.value || '';
-  const bulan    = document.getElementById('filter-kas-bulan')?.value || '';
-  const tahun    = document.getElementById('filter-kas-tahun')?.value || '';
-  let exportData = allKasData;
-  if (jenis)    exportData = exportData.filter(k => k.jenis === jenis);
-  if (kategori) exportData = exportData.filter(k => k.kategori === kategori);
-  if (bulan)    exportData = exportData.filter(k => k.tanggal && k.tanggal.slice(5,7) === bulan);
-  if (tahun)    exportData = exportData.filter(k => k.tanggal && k.tanggal.slice(0,4) === tahun);
-  const label = [jenis,kategori,bulan,tahun].filter(Boolean).join(' | ') || 'Semua Periode';
-  doc.setFontSize(16); doc.text(`Laporan Kas RT — ${label}`,14,20);
+  const now = new Date();
+  const label = now.toLocaleDateString('id-ID', {month:'long', year:'numeric'});
+  doc.setFontSize(16); doc.text(`Laporan Kas RT — Semua Periode`,14,20);
   doc.setFontSize(11); let y=35;
   doc.text('Tanggal',14,y); doc.text('Keterangan',50,y); doc.text('Jenis',120,y); doc.text('Nominal',155,y);
   y+=6; doc.line(14,y,196,y); y+=4;
@@ -1257,16 +1295,7 @@ function exportKasPDF() {
   doc.save(`laporan-kas-rt-semua.pdf`); showToast('PDF berhasil diunduh!');
 }
 function exportKasExcel() {
-  const jenis2=document.getElementById('filter-kas-jenis')?.value||'';
-  const kat2=document.getElementById('filter-kas-kategori')?.value||'';
-  const bln2=document.getElementById('filter-kas-bulan')?.value||'';
-  const thn2=document.getElementById('filter-kas-tahun')?.value||'';
-  let exData=allKasData;
-  if(jenis2) exData=exData.filter(k=>k.jenis===jenis2);
-  if(kat2)   exData=exData.filter(k=>k.kategori===kat2);
-  if(bln2)   exData=exData.filter(k=>k.tanggal&&k.tanggal.slice(5,7)===bln2);
-  if(thn2)   exData=exData.filter(k=>k.tanggal&&k.tanggal.slice(0,4)===thn2);
-  const rows=exData.map(k=>({Tanggal:fmtDate(k.tanggal),Keterangan:k.keterangan,Blok:k.blok_warga||'-',Kategori:k.kategori,Jenis:k.jenis,Nominal:k.nominal}));
+  const rows=allKasData.map(k=>({Tanggal:fmtDate(k.tanggal),Keterangan:k.keterangan,Kategori:k.kategori,Jenis:k.jenis,Nominal:k.nominal}));
   const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Kas RT'); XLSX.writeFile(wb,`laporan-kas-rt-semua.xlsx`);
   showToast('Excel berhasil diunduh!');
@@ -2091,14 +2120,17 @@ async function sinkronSemuaWarga() {
 
 
 // ============================================================
-// BERSIHKAN DATA KAS DOUBLE
+// FILTER & BERSIHKAN KAS
 // ============================================================
 async function bersihkanDoubleKas() {
-  if (!confirm('Hapus semua entri kas yang double/duplikat?\nData terbaru akan tetap ada.')) return;
+  if (!confirm('Hapus entri kas yang double/duplikat?\nHanya data auto (iuran) yang dibersihkan.\nData input manual TIDAK akan dihapus.')) return;
   showToast('Membersihkan data double...', 'info');
-  const { data: allKas } = await db.from('kas').select('id,keterangan,kategori,jenis,tanggal')
-    .order('tanggal', { ascending: false });
-  if (!allKas || !allKas.length) { showToast('Tidak ada data kas', 'info'); return; }
+
+  // Hanya bersihkan data auto (dari iuran) — data manual dibiarkan
+  const { data: allKas } = await db.from('kas').select('id,keterangan,kategori,jenis,tanggal,created_by')
+    .eq('created_by','auto').order('tanggal', { ascending: false });
+  if (!allKas || !allKas.length) { showToast('Tidak ada data double ✅', 'info'); return; }
+
   const groups = {};
   for (const k of allKas) {
     const key = `${k.keterangan}|${k.kategori}|${k.jenis}`;
@@ -2109,8 +2141,7 @@ async function bersihkanDoubleKas() {
   for (const key of Object.keys(groups)) {
     const items = groups[key];
     if (items.length > 1) {
-      const toDelete = items.slice(1);
-      for (const item of toDelete) {
+      for (const item of items.slice(1)) {
         await db.from('kas').delete().eq('id', item.id);
         deleted++;
       }
@@ -2118,7 +2149,7 @@ async function bersihkanDoubleKas() {
   }
   if (deleted > 0) {
     showToast(`${deleted} entri double berhasil dihapus!`);
-    logAktivitas('Bersihkan Double Kas', `${deleted} entri dihapus`);
+    logAktivitas('Bersihkan Double Kas', `${deleted} entri`);
   } else {
     showToast('Tidak ada data double ✅', 'info');
   }
