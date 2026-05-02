@@ -576,6 +576,8 @@ function navigateTo(page, btn) {
   btn.classList.add('active');
   const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
   document.getElementById('current-page-title').textContent = titles[page] || page;
+  // FIX: simpan halaman terakhir agar dipulihkan saat refresh
+  localStorage.setItem('rt_last_page', page);
   if (page==='warga')  loadWarga();
   if (page==='iuran')  loadIuran();
   if (page==='kas')    loadKas();
@@ -669,7 +671,7 @@ function logout() {
   document.getElementById('warga-blok').value = '';
   document.getElementById('warga-pass').value = '';
 }
-function startApp() {
+async function startApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   const isAdmin = currentUser === 'admin';
@@ -684,7 +686,53 @@ function startApp() {
   const thIuranAksi  = document.getElementById('th-iuran-aksi');  if (thIuranAksi)  thIuranAksi.style.display  = isAdmin ? '' : 'none';
   const thIuranBukti = document.getElementById('th-iuran-bukti'); if (thIuranBukti) thIuranBukti.style.display = isAdmin ? '' : 'none';
   initFilterBulanTahun('filter-bulan-iuran', 'filter-tahun-iuran', loadIuran);
-  loadDashboard(); loadWarga(); loadIuran(); loadKas(); loadProfil();
+
+  // FIX Bug 3: pulihkan halaman terakhir (sebelum refresh) — bukan selalu dashboard
+  const lastPage = localStorage.getItem('rt_last_page') || 'dashboard';
+  const navBtns  = document.querySelectorAll('.nav-item');
+  const pageOrder = ['dashboard','warga','iuran','kas','profil'];
+  const pageIdx  = pageOrder.indexOf(lastPage);
+  const targetBtn = navBtns[pageIdx >= 0 ? pageIdx : 0];
+
+  // Tampilkan halaman yang benar tanpa trigger load data dulu
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + lastPage).classList.add('active');
+  targetBtn.classList.add('active');
+  const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
+  document.getElementById('current-page-title').textContent = titles[lastPage] || lastPage;
+
+  // FIX Bug 2: load halaman aktif dulu (await), lalu data lain paralel di background
+  // Mencegah race condition — halaman aktif pasti selesai sebelum render
+  if (lastPage === 'dashboard')     await loadDashboard();
+  else if (lastPage === 'warga')    await loadWarga();
+  else if (lastPage === 'iuran')    await loadIuran();
+  else if (lastPage === 'kas')      await loadKas();
+  else if (lastPage === 'profil')   await loadProfil();
+
+  // Setelah halaman aktif selesai, load data lainnya paralel di background (tidak blocking UI)
+  const bgLoads = [];
+  if (lastPage !== 'dashboard') bgLoads.push(loadDashboard());
+  if (lastPage !== 'warga')     bgLoads.push(loadWarga());
+  if (lastPage !== 'kas')       bgLoads.push(loadKas());
+  if (lastPage !== 'profil')    bgLoads.push(loadProfil());
+  // iuran tidak perlu diload di background karena filter bulan/tahun belum tentu tepat
+  Promise.all(bgLoads).catch(() => {});
+
+  // FIX Bug 2: reload data aktif saat tab/app kembali visible (mencegah freeze)
+  if (!window._rtVisibilityBound) {
+    window._rtVisibilityBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentUser) {
+        const activePage = localStorage.getItem('rt_last_page') || 'dashboard';
+        if (activePage === 'dashboard')    loadDashboard();
+        else if (activePage === 'warga')   loadWarga();
+        else if (activePage === 'iuran')   loadIuran();
+        else if (activePage === 'kas')     loadKas();
+        else if (activePage === 'profil')  loadProfil();
+      }
+    });
+  }
 }
 
 // ============================================================
@@ -1071,7 +1119,11 @@ async function saveIuran(e) {
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const ketKas        = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
   const ketAkomodasi  = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
-  const tglHari       = tglBayar || new Date().toISOString().slice(0,10);
+  // FIX: tanggal KAS menggunakan bulan tagihan (bukan bulan input),
+  // agar iuran Mei tetap masuk ke bulan Mei walau dibayar di bulan April.
+  const bulanPadded = String(bulan).padStart(2, '0');
+  const tglKas = `${tahun}-${bulanPadded}-01`;
+  const tglHari = tglKas;
 
   // ── Kas Masuk (iuran) ──────────────────────────────────────
   const { data: kasExisting } = await db.from('kas').select('id,nominal')
