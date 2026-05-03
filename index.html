@@ -576,6 +576,8 @@ function navigateTo(page, btn) {
   btn.classList.add('active');
   const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
   document.getElementById('current-page-title').textContent = titles[page] || page;
+  // FIX: simpan halaman terakhir agar dipulihkan saat refresh
+  localStorage.setItem('rt_last_page', page);
   if (page==='warga')  loadWarga();
   if (page==='iuran')  loadIuran();
   if (page==='kas')    loadKas();
@@ -669,7 +671,7 @@ function logout() {
   document.getElementById('warga-blok').value = '';
   document.getElementById('warga-pass').value = '';
 }
-function startApp() {
+async function startApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   const isAdmin = currentUser === 'admin';
@@ -684,7 +686,53 @@ function startApp() {
   const thIuranAksi  = document.getElementById('th-iuran-aksi');  if (thIuranAksi)  thIuranAksi.style.display  = isAdmin ? '' : 'none';
   const thIuranBukti = document.getElementById('th-iuran-bukti'); if (thIuranBukti) thIuranBukti.style.display = isAdmin ? '' : 'none';
   initFilterBulanTahun('filter-bulan-iuran', 'filter-tahun-iuran', loadIuran);
-  loadDashboard(); loadWarga(); loadIuran(); loadKas(); loadProfil();
+
+  // FIX Bug 3: pulihkan halaman terakhir (sebelum refresh) — bukan selalu dashboard
+  const lastPage = localStorage.getItem('rt_last_page') || 'dashboard';
+  const navBtns  = document.querySelectorAll('.nav-item');
+  const pageOrder = ['dashboard','warga','iuran','kas','profil'];
+  const pageIdx  = pageOrder.indexOf(lastPage);
+  const targetBtn = navBtns[pageIdx >= 0 ? pageIdx : 0];
+
+  // Tampilkan halaman yang benar tanpa trigger load data dulu
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + lastPage).classList.add('active');
+  targetBtn.classList.add('active');
+  const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
+  document.getElementById('current-page-title').textContent = titles[lastPage] || lastPage;
+
+  // FIX Bug 2: load halaman aktif dulu (await), lalu data lain paralel di background
+  // Mencegah race condition — halaman aktif pasti selesai sebelum render
+  if (lastPage === 'dashboard')     await loadDashboard();
+  else if (lastPage === 'warga')    await loadWarga();
+  else if (lastPage === 'iuran')    await loadIuran();
+  else if (lastPage === 'kas')      await loadKas();
+  else if (lastPage === 'profil')   await loadProfil();
+
+  // Setelah halaman aktif selesai, load data lainnya paralel di background (tidak blocking UI)
+  const bgLoads = [];
+  if (lastPage !== 'dashboard') bgLoads.push(loadDashboard());
+  if (lastPage !== 'warga')     bgLoads.push(loadWarga());
+  if (lastPage !== 'kas')       bgLoads.push(loadKas());
+  if (lastPage !== 'profil')    bgLoads.push(loadProfil());
+  // iuran tidak perlu diload di background karena filter bulan/tahun belum tentu tepat
+  Promise.all(bgLoads).catch(() => {});
+
+  // FIX Bug 2: reload data aktif saat tab/app kembali visible (mencegah freeze)
+  if (!window._rtVisibilityBound) {
+    window._rtVisibilityBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentUser) {
+        const activePage = localStorage.getItem('rt_last_page') || 'dashboard';
+        if (activePage === 'dashboard')    loadDashboard();
+        else if (activePage === 'warga')   loadWarga();
+        else if (activePage === 'iuran')   loadIuran();
+        else if (activePage === 'kas')     loadKas();
+        else if (activePage === 'profil')  loadProfil();
+      }
+    });
+  }
 }
 
 // ============================================================
@@ -1006,50 +1054,56 @@ function setFilterBlokIuran(blok, btn) {
   btn.classList.add('active');
   filterIuran(document.getElementById('search-iuran').value);
 }
-function showModalIuran(wargaId, nama, iuranId) {
+async function showModalIuran(wargaId, nama, iuranId) {
   const item = allIuranData.find(w => w.id === wargaId);
   document.getElementById('modal-iuran-nama').textContent = nama;
   document.getElementById('i-warga-id').value = wargaId;
-  document.getElementById('i-id').value = iuranId || '';
 
   // Isi dropdown tahun tagihan
   const selTahun = document.getElementById('i-tahun-tagihan');
   const now = new Date();
-  selTahun.innerHTML = '';
-  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
-    selTahun.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
-  }
-
-  // Default tagihan bulan = filter layar
   const bulanFilter = parseInt(document.getElementById('filter-bulan-iuran').value);
   const tahunFilter = parseInt(document.getElementById('filter-tahun-iuran').value);
-
-  if (item && item.iuran) {
-    document.getElementById('i-status').value = item.iuran.status;
-    document.getElementById('i-nominal').value = item.iuran.nominal || 50000;
-    // Set tagihan bulan dari data yang ada
-    document.getElementById('i-bulan-tagihan').value = item.iuran.bulan || bulanFilter;
-    document.getElementById('i-tahun-tagihan').value = item.iuran.tahun || tahunFilter;
-    const ketVal = item.iuran.keterangan || '';
-    document.getElementById('i-ket').value = ['akomodasi','cicil'].includes(ketVal) ? ketVal : '';
-  } else {
-    document.getElementById('form-iuran').reset();
-    document.getElementById('i-nominal').value = 50000;
-    // Default = filter layar
-    document.getElementById('i-bulan-tagihan').value = bulanFilter;
-    document.getElementById('i-tahun-tagihan').value = tahunFilter;
-    // Re-populate tahun setelah reset
+  const isiTahun = () => {
     selTahun.innerHTML = '';
     for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
       selTahun.innerHTML += `<option value="${y}" ${y===tahunFilter?'selected':''}>${y}</option>`;
     }
+  };
+  isiTahun();
+
+  // FIX: iuranId dari template bisa berupa string 'null' → normalisasi ke ''
+  const iuranIdBersih = (!iuranId || iuranId === 'null') ? '' : iuranId;
+
+  // FIX: selalu query DB langsung berdasar warga + bulanFilter + tahunFilter
+  // agar tidak bergantung pada allIuranData yang mungkin load bulan berbeda
+  const { data: existing } = await db.from('iuran').select('*')
+    .eq('warga_id', wargaId).eq('bulan', bulanFilter).eq('tahun', tahunFilter).maybeSingle();
+
+  if (existing) {
+    // Warga sudah punya data iuran bulan ini — isi form dari DB
+    document.getElementById('i-id').value = existing.id;
+    document.getElementById('i-status').value = existing.status;
+    document.getElementById('i-nominal').value = existing.nominal || 50000;
+    document.getElementById('i-bulan-tagihan').value = existing.bulan;
+    document.getElementById('i-tahun-tagihan').value = existing.tahun;
+    const ketVal = existing.keterangan || '';
+    document.getElementById('i-ket').value = ['akomodasi','cicil'].includes(ketVal) ? ketVal : '';
+  } else {
+    // Belum ada iuran bulan ini — form kosong
+    document.getElementById('form-iuran').reset();
+    document.getElementById('i-id').value = '';
+    document.getElementById('i-nominal').value = 50000;
+    document.getElementById('i-bulan-tagihan').value = bulanFilter;
+    isiTahun();
     document.getElementById('i-tahun-tagihan').value = tahunFilter;
   }
   openModal('modal-iuran');
 }
 async function saveIuran(e) {
   e.preventDefault();
-  const iuranId  = document.getElementById('i-id').value;
+  // FIX: pastikan iuranId yang berupa string 'null' tidak dianggap valid
+  const iuranId  = (() => { const v = document.getElementById('i-id').value; return (!v || v === 'null') ? '' : v; })();
   const wargaId  = document.getElementById('i-warga-id').value;
   // Pakai tagihan bulan dari dropdown (bisa beda dari filter layar)
   const bulan    = parseInt(document.getElementById('i-bulan-tagihan').value);
@@ -1069,65 +1123,56 @@ async function saveIuran(e) {
   const warga     = allIuranData.find(w => w.id === wargaId);
   const namaWarga = warga ? warga.nama_kk : wargaId;
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const ketKas        = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
-  const ketAkomodasi  = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
-  const tglHari       = tglBayar || new Date().toISOString().slice(0,10);
+  const ketKas       = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
+  const ketAkomodasi = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
+  const blokWarga    = warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null;
 
-  // ── Kas Masuk (iuran) ──────────────────────────────────────
-  const { data: kasExisting } = await db.from('kas').select('id,nominal')
-    .eq('keterangan', ketKas).eq('kategori','iuran').eq('jenis','masuk');
+  // Tanggal KAS = tanggal 1 bulan tagihan (bukan tanggal hari ini)
+  // Agar iuran Mei yang dibayar April tetap masuk ke bulan Mei
+  const bulanPadded = String(bulan).padStart(2, '0');
+  const tglHari     = `${tahun}-${bulanPadded}-01`;
 
+  // ── HAPUS SEMUA kas lama milik warga+bulan+tahun ini terlebih dahulu ──
+  // Ini mencegah duplikat akibat nama warga berubah, atau saveIuran dipanggil berulang.
+  // Cari semua kas yang terkait iuran ini: filter by warga, bulan/tahun, kategori iuran/masuk
+  const bulanAwal = `${tahun}-${bulanPadded}-01`;
+  const bulanAkhir = `${tahun}-${bulanPadded}-31`;
+
+  const { data: kasLamaMasuk } = await db.from('kas').select('id')
+    .eq('jenis','masuk').eq('kategori','iuran')
+    .eq('blok_warga', blokWarga)
+    .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  if (kasLamaMasuk && kasLamaMasuk.length > 0) {
+    for (const k of kasLamaMasuk) await db.from('kas').delete().eq('id', k.id);
+  }
+
+  const { data: kasLamaKeluar } = await db.from('kas').select('id')
+    .eq('jenis','keluar').eq('kategori','operasional')
+    .eq('blok_warga', blokWarga)
+    .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  if (kasLamaKeluar && kasLamaKeluar.length > 0) {
+    for (const k of kasLamaKeluar) await db.from('kas').delete().eq('id', k.id);
+  }
+
+  // ── Sekarang insert kas baru sesuai status ──────────────────
   if (status === 'lunas') {
-    if (!kasExisting || kasExisting.length === 0) {
-      await db.from('kas').insert({
-        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
-        kategori:'iuran', created_by:'auto',
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      });
-    } else {
-      await db.from('kas').update({
-        nominal, tanggal:tglHari,
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      }).eq('id', kasExisting[0].id);
-    }
+    // Kas masuk iuran
+    await db.from('kas').insert({
+      tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
+      kategori:'iuran', created_by:'auto', blok_warga: blokWarga
+    });
 
-    // ── Kas Keluar Akomodasi (jika dipilih) ───────────────────
-    const NOMINAL_AKOMODASI = 45000;
-    const { data: kasAkomo } = await db.from('kas').select('id')
-      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
-
+    // Kas keluar akomodasi (jika dipilih)
     if (ket === 'akomodasi') {
-      if (!kasAkomo || kasAkomo.length === 0) {
-        // Insert kas keluar akomodasi baru
-        await db.from('kas').insert({
-          tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
-          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        });
-      } else {
-        await db.from('kas').update({
-          tanggal:tglHari,
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        }).eq('id', kasAkomo[0].id);
-      }
-    } else {
-      // Keterangan bukan akomodasi → hapus kas akomodasi jika ada
-      if (kasAkomo && kasAkomo.length > 0) {
-        for (const k of kasAkomo) await db.from('kas').delete().eq('id', k.id);
-      }
-    }
-
-  } else {
-    // Status belum bayar → hapus kas masuk & kas akomodasi terkait
-    if (kasExisting && kasExisting.length > 0) {
-      for (const k of kasExisting) await db.from('kas').delete().eq('id', k.id);
-    }
-    const { data: kasAkomoHapus } = await db.from('kas').select('id')
-      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
-    if (kasAkomoHapus && kasAkomoHapus.length > 0) {
-      for (const k of kasAkomoHapus) await db.from('kas').delete().eq('id', k.id);
+      const NOMINAL_AKOMODASI = 45000;
+      await db.from('kas').insert({
+        tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
+        keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
+        blok_warga: blokWarga
+      });
     }
   }
+  // Status belum lunas → kas sudah dihapus di atas, tidak perlu insert
 
   showToast('Status iuran disimpan!');
   closeModal('modal-iuran');
@@ -1195,10 +1240,9 @@ function applyFilterKas() {
   let filtered = allKasData;
   if (jenis)    filtered = filtered.filter(k => k.jenis === jenis);
   if (kategori) filtered = filtered.filter(k => k.kategori === kategori);
-  if (bulan)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(5,7) === bulan);
+  if (bulan)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(5,7) === bulan.padStart(2,'0'));
   if (tahun)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(0,4) === tahun);
 
-  // Tampilkan summary jika ada filter bulan atau tahun aktif
   const summaryEl = document.getElementById('kas-filter-summary');
   if (summaryEl) {
     const hasFilter = bulan || tahun;
@@ -1212,17 +1256,19 @@ function applyFilterKas() {
       const saldoEl = document.getElementById('summary-saldo');
       saldoEl.textContent = rp(Math.abs(saldo));
       saldoEl.style.color = saldo >= 0 ? '#1565C0' : '#C62828';
-      // Tambah label bulan/tahun di summary
+
+      // FIX: hapus label lama sebelum insert baru agar tidak menumpuk
       const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
         'Juli','Agustus','September','Oktober','November','Desember'];
       const label = [bulan ? bulanNama[parseInt(bulan)] : '', tahun].filter(Boolean).join(' ');
-      summaryEl.querySelector('div').insertAdjacentHTML('afterbegin',
-        `<div style="font-size:12px;font-weight:700;color:#1E293B;margin-bottom:8px;text-align:left;">
+      const innerDiv = summaryEl.querySelector('div');
+      // Hapus semua elemen label lama (elemen pertama di innerDiv jika ada)
+      const labelLama = innerDiv.querySelector('.summary-label');
+      if (labelLama) labelLama.remove();
+      innerDiv.insertAdjacentHTML('afterbegin',
+        `<div class="summary-label" style="font-size:12px;font-weight:700;color:#1E293B;margin-bottom:8px;text-align:left;">
           📅 Ringkasan: ${label}
          </div>`);
-      // Hapus label duplikat
-      const labels = summaryEl.querySelectorAll('div > div:first-child');
-      if (labels.length > 1) for(let i=1;i<labels.length;i++) labels[i].remove();
     }
   }
 
