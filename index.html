@@ -1117,69 +1117,56 @@ async function saveIuran(e) {
   const warga     = allIuranData.find(w => w.id === wargaId);
   const namaWarga = warga ? warga.nama_kk : wargaId;
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const ketKas        = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
-  const ketAkomodasi  = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
-  // FIX: tanggal KAS menggunakan bulan tagihan (bukan bulan input),
-  // agar iuran Mei tetap masuk ke bulan Mei walau dibayar di bulan April.
+  const ketKas       = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
+  const ketAkomodasi = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
+  const blokWarga    = warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null;
+
+  // Tanggal KAS = tanggal 1 bulan tagihan (bukan tanggal hari ini)
+  // Agar iuran Mei yang dibayar April tetap masuk ke bulan Mei
   const bulanPadded = String(bulan).padStart(2, '0');
-  const tglKas = `${tahun}-${bulanPadded}-01`;
-  const tglHari = tglKas;
+  const tglHari     = `${tahun}-${bulanPadded}-01`;
 
-  // ── Kas Masuk (iuran) ──────────────────────────────────────
-  const { data: kasExisting } = await db.from('kas').select('id,nominal')
-    .eq('keterangan', ketKas).eq('kategori','iuran').eq('jenis','masuk');
+  // ── HAPUS SEMUA kas lama milik warga+bulan+tahun ini terlebih dahulu ──
+  // Ini mencegah duplikat akibat nama warga berubah, atau saveIuran dipanggil berulang.
+  // Cari semua kas yang terkait iuran ini: filter by warga, bulan/tahun, kategori iuran/masuk
+  const bulanAwal = `${tahun}-${bulanPadded}-01`;
+  const bulanAkhir = `${tahun}-${bulanPadded}-31`;
 
+  const { data: kasLamaMasuk } = await db.from('kas').select('id')
+    .eq('jenis','masuk').eq('kategori','iuran')
+    .eq('blok_warga', blokWarga)
+    .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  if (kasLamaMasuk && kasLamaMasuk.length > 0) {
+    for (const k of kasLamaMasuk) await db.from('kas').delete().eq('id', k.id);
+  }
+
+  const { data: kasLamaKeluar } = await db.from('kas').select('id')
+    .eq('jenis','keluar').eq('kategori','operasional')
+    .eq('blok_warga', blokWarga)
+    .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  if (kasLamaKeluar && kasLamaKeluar.length > 0) {
+    for (const k of kasLamaKeluar) await db.from('kas').delete().eq('id', k.id);
+  }
+
+  // ── Sekarang insert kas baru sesuai status ──────────────────
   if (status === 'lunas') {
-    if (!kasExisting || kasExisting.length === 0) {
-      await db.from('kas').insert({
-        tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
-        kategori:'iuran', created_by:'auto',
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      });
-    } else {
-      await db.from('kas').update({
-        nominal, tanggal:tglHari,
-        blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-      }).eq('id', kasExisting[0].id);
-    }
+    // Kas masuk iuran
+    await db.from('kas').insert({
+      tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
+      kategori:'iuran', created_by:'auto', blok_warga: blokWarga
+    });
 
-    // ── Kas Keluar Akomodasi (jika dipilih) ───────────────────
-    const NOMINAL_AKOMODASI = 45000;
-    const { data: kasAkomo } = await db.from('kas').select('id')
-      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
-
+    // Kas keluar akomodasi (jika dipilih)
     if (ket === 'akomodasi') {
-      if (!kasAkomo || kasAkomo.length === 0) {
-        // Insert kas keluar akomodasi baru
-        await db.from('kas').insert({
-          tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
-          keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        });
-      } else {
-        await db.from('kas').update({
-          tanggal:tglHari,
-          blok_warga: warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null
-        }).eq('id', kasAkomo[0].id);
-      }
-    } else {
-      // Keterangan bukan akomodasi → hapus kas akomodasi jika ada
-      if (kasAkomo && kasAkomo.length > 0) {
-        for (const k of kasAkomo) await db.from('kas').delete().eq('id', k.id);
-      }
-    }
-
-  } else {
-    // Status belum bayar → hapus kas masuk & kas akomodasi terkait
-    if (kasExisting && kasExisting.length > 0) {
-      for (const k of kasExisting) await db.from('kas').delete().eq('id', k.id);
-    }
-    const { data: kasAkomoHapus } = await db.from('kas').select('id')
-      .eq('keterangan', ketAkomodasi).eq('kategori','operasional').eq('jenis','keluar');
-    if (kasAkomoHapus && kasAkomoHapus.length > 0) {
-      for (const k of kasAkomoHapus) await db.from('kas').delete().eq('id', k.id);
+      const NOMINAL_AKOMODASI = 45000;
+      await db.from('kas').insert({
+        tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
+        keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
+        blok_warga: blokWarga
+      });
     }
   }
+  // Status belum lunas → kas sudah dihapus di atas, tidak perlu insert
 
   showToast('Status iuran disimpan!');
   closeModal('modal-iuran');
