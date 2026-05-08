@@ -1102,23 +1102,25 @@ async function showModalIuran(wargaId, nama, iuranId) {
 }
 async function saveIuran(e) {
   e.preventDefault();
-  // FIX: pastikan iuranId yang berupa string 'null' tidak dianggap valid
-  const iuranId  = (() => { const v = document.getElementById('i-id').value; return (!v || v === 'null') ? '' : v; })();
   const wargaId  = document.getElementById('i-warga-id').value;
-  // Pakai tagihan bulan dari dropdown (bisa beda dari filter layar)
   const bulan    = parseInt(document.getElementById('i-bulan-tagihan').value);
   const tahun    = parseInt(document.getElementById('i-tahun-tagihan').value);
   const status   = document.getElementById('i-status').value;
   const nominal  = parseInt(document.getElementById('i-nominal').value) || 50000;
-  // Tanggal bayar otomatis hari ini saat Simpan diklik
   const tglBayar = new Date().toISOString().slice(0,10);
-  const ket      = document.getElementById('i-ket').value; // 'akomodasi' | 'cicil' | ''
+  const ket      = document.getElementById('i-ket').value;
 
+  // FIX: pakai upsert dengan onConflict warga_id+bulan+tahun
+  // → tidak perlu tahu apakah sudah ada atau belum, tidak akan pernah duplikat
   const payload = { warga_id:wargaId, bulan, tahun, status, nominal, tgl_bayar:tglBayar, keterangan:ket };
-  let err;
-  if (iuranId) { const r=await db.from('iuran').update(payload).eq('id',iuranId); err=r.error; }
-  else         { const r=await db.from('iuran').insert(payload); err=r.error; }
-  if (err) { showToast('Gagal: '+err.message,'error'); return; }
+  const { error: upsertErr } = await db.from('iuran')
+    .upsert(payload, { onConflict: 'warga_id,bulan,tahun' });
+  if (upsertErr) { showToast('Gagal: '+upsertErr.message,'error'); return; }
+
+  // Ambil iuranId hasil upsert untuk bukti pembayaran
+  const { data: savedIuran } = await db.from('iuran').select('id')
+    .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun).single();
+  const finalIuranId = savedIuran ? savedIuran.id : null;
 
   const warga     = allIuranData.find(w => w.id === wargaId);
   const namaWarga = warga ? warga.nama_kk : wargaId;
@@ -1181,15 +1183,7 @@ async function saveIuran(e) {
   loadIuran(); loadDashboard(); loadKas();
 
   // Otomatis tampilkan bukti pembayaran jika status lunas
-  if (status === 'lunas') {
-    let finalIuranId = iuranId;
-    if (!finalIuranId) {
-      const { data: newIuran } = await db.from('iuran').select('id')
-        .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun).single();
-      finalIuranId = newIuran ? newIuran.id : null;
-    }
-    if (finalIuranId) showBuktiPembayaran(wargaId, finalIuranId);
-  }
+  if (status === 'lunas' && finalIuranId) showBuktiPembayaran(wargaId, finalIuranId);
 }
 async function generateIuranBulanan() {
   const bulan=parseInt(document.getElementById('filter-bulan-iuran').value), tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
