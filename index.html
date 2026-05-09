@@ -352,14 +352,17 @@
       <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="i-nominal" value="50000" min="0"></div>
       <div class="form-group">
         <label>Tagihan Bulan</label>
-        <!-- FIX: readonly display — bulan/tahun ikut filter layar, tidak bisa diubah dari modal -->
         <div style="display:flex;gap:8px;">
-          <div id="i-bulan-tagihan-label" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;background:#F5F5F5;color:#555;"></div>
-          <div id="i-tahun-tagihan-label" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;background:#F5F5F5;color:#555;text-align:center;"></div>
+          <select id="i-bulan-tagihan" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;" onchange="onUbahBulanIuran()">
+            <option value="1">Januari</option><option value="2">Februari</option>
+            <option value="3">Maret</option><option value="4">April</option>
+            <option value="5">Mei</option><option value="6">Juni</option>
+            <option value="7">Juli</option><option value="8">Agustus</option>
+            <option value="9">September</option><option value="10">Oktober</option>
+            <option value="11">November</option><option value="12">Desember</option>
+          </select>
+          <select id="i-tahun-tagihan" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;" onchange="onUbahBulanIuran()"></select>
         </div>
-        <input type="hidden" id="i-bulan-tagihan">
-        <input type="hidden" id="i-tahun-tagihan">
-        <div style="font-size:11px;color:#999;margin-top:4px;">Untuk ganti bulan, ubah filter di halaman Iuran</div>
       </div>
       <div class="form-group">
         <label>Keterangan</label>
@@ -1056,33 +1059,52 @@ async function showModalIuran(wargaId, nama, iuranId) {
   document.getElementById('modal-iuran-nama').textContent = nama;
   document.getElementById('i-warga-id').value = wargaId;
 
-  // Bulan/tahun SELALU ikut filter layar — tidak bisa diubah dari modal
+  // Isi dropdown tahun
+  const now = new Date();
+  const selTahun = document.getElementById('i-tahun-tagihan');
+  selTahun.innerHTML = '';
+  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++)
+    selTahun.innerHTML += `<option value="${y}">${y}</option>`;
+
+  // Default bulan/tahun = filter layar
   const bulanFilter = parseInt(document.getElementById('filter-bulan-iuran').value);
   const tahunFilter = parseInt(document.getElementById('filter-tahun-iuran').value);
   document.getElementById('i-bulan-tagihan').value = bulanFilter;
-  document.getElementById('i-tahun-tagihan').value = tahunFilter;
-  document.getElementById('i-bulan-tagihan-label').textContent = bulanNamaArr[bulanFilter] || bulanFilter;
-  document.getElementById('i-tahun-tagihan-label').textContent = tahunFilter;
+  selTahun.value = tahunFilter;
 
-  // Query DB langsung — cek apakah warga sudah punya iuran bulan ini
+  // Query DB untuk bulan ini
+  await _isiFormIuranDariDB(wargaId, bulanFilter, tahunFilter);
+  openModal('modal-iuran');
+}
+
+// Dipanggil saat admin ubah dropdown bulan/tahun di dalam modal
+async function onUbahBulanIuran() {
+  const wargaId = document.getElementById('i-warga-id').value;
+  const bulan   = parseInt(document.getElementById('i-bulan-tagihan').value);
+  const tahun   = parseInt(document.getElementById('i-tahun-tagihan').value);
+  if (!wargaId || !bulan || !tahun) return;
+  await _isiFormIuranDariDB(wargaId, bulan, tahun);
+}
+
+// Helper: query DB dan isi form iuran sesuai data yang ada
+async function _isiFormIuranDariDB(wargaId, bulan, tahun) {
   const { data: existing } = await db.from('iuran').select('*')
-    .eq('warga_id', wargaId).eq('bulan', bulanFilter).eq('tahun', tahunFilter).maybeSingle();
+    .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
 
   if (existing) {
-    document.getElementById('i-id').value = existing.id;
+    // Sudah ada data untuk bulan ini — isi dari DB
+    document.getElementById('i-id').value     = existing.id;
     document.getElementById('i-status').value = existing.status;
     document.getElementById('i-nominal').value = existing.nominal || 50000;
     const ketVal = existing.keterangan || '';
     document.getElementById('i-ket').value = ['akomodasi','cicil'].includes(ketVal) ? ketVal : '';
   } else {
-    document.getElementById('form-iuran').reset();
-    document.getElementById('i-id').value = '';
+    // Belum ada — reset ke default kosong
+    document.getElementById('i-id').value      = '';
+    document.getElementById('i-status').value  = 'lunas';
     document.getElementById('i-nominal').value = 50000;
-    // Reset ulang hidden fields setelah reset()
-    document.getElementById('i-bulan-tagihan').value = bulanFilter;
-    document.getElementById('i-tahun-tagihan').value = tahunFilter;
+    document.getElementById('i-ket').value     = '';
   }
-  openModal('modal-iuran');
 }
 async function saveIuran(e) {
   e.preventDefault();
