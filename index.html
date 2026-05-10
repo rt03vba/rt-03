@@ -365,11 +365,11 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Keterangan</label>
-        <select id="i-ket">
-          <option value="">— Normal —</option>
-          <option value="akomodasi">🏠 Akomodasi</option>
-          <option value="cicil">💳 Cicil</option>
+        <label>Keterangan / Paket</label>
+        <select id="i-ket" onchange="onUbahKetIuran()">
+          <option value="50000">💰 Rp 50.000 (Rp 45.000 kepotong, Rp 5.000 ke kas)</option>
+          <option value="70000">💰 Rp 70.000 (Rp 65.000 kepotong, Rp 5.000 ke kas)</option>
+          <option value="20000">💰 Rp 20.000 (kepotong semua, tidak ke kas)</option>
         </select>
       </div>
       <input type="hidden" id="i-id">
@@ -842,7 +842,6 @@ async function loadWarga() {
     if (blokCmp !== 0) return blokCmp;
     return parseInt(a.nomor_rumah) - parseInt(b.nomor_rumah);
   });
-  // Filter blok chip hanya untuk admin
   if (isAdmin) {
     const bloks = [...new Set(allWarga.map(w=>w.blok))].sort();
     const fc = document.getElementById('filter-blok');
@@ -1021,14 +1020,19 @@ async function loadIuran() {
 function renderIuran(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-iuran');
   if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
-  tbody.innerHTML=data.map(item=>`
+  tbody.innerHTML=data.map(item=>{
+    const paket = item.iuran?.keterangan;
+    const paketLabel = paket==='50000' ? '<br><span style="font-size:10px;background:#EFF6FF;color:#1565C0;padding:1px 6px;border-radius:8px;font-weight:700;">💰 50rb</span>'
+      : paket==='70000' ? '<br><span style="font-size:10px;background:#F0FDF4;color:#2E7D32;padding:1px 6px;border-radius:8px;font-weight:700;">💰 70rb</span>'
+      : paket==='20000' ? '<br><span style="font-size:10px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:8px;font-weight:700;">💰 20rb</span>'
+      : '';
+    return `
     <tr>
       <td><b>Blok ${item.blok}-${item.nomor_rumah}</b></td>
       <td>${item.nama_kk}</td>
       <td>
         ${item.iuran?`<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`:'<span class="badge badge-warning">Belum input</span>'}
-        ${item.iuran&&item.iuran.keterangan==='cicil'?'<br><span style="font-size:10px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:8px;font-weight:700;">💳 Cicil</span>':''}
-        ${item.iuran&&item.iuran.keterangan==='akomodasi'?'<br><span style="font-size:10px;background:#EFF6FF;color:#1565C0;padding:1px 6px;border-radius:8px;font-weight:700;">🏠 Akomo</span>':''}
+        ${paketLabel}
       </td>
       <td style="font-size:12px;">${item.iuran?fmtDate(item.iuran.tgl_bayar):'-'}</td>
       ${isAdmin?`<td><button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button></td>`:''}
@@ -1036,7 +1040,8 @@ function renderIuran(data) {
         <button class="btn btn-success btn-sm" onclick="showBuktiPembayaran('${item.id}','${item.iuran.id}')" title="Lihat Bukti">🧾</button>
         ${isAdmin?`<button class="btn btn-success btn-sm" style="background:#25D366;margin-left:4px;" onclick="buktiKirimWA('${item.id}','${item.iuran.id}')" title="Kirim WA">📲</button>`:''}
       `:''}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function filterIuran(q) {
   let data = allIuranData;
@@ -1086,24 +1091,30 @@ async function onUbahBulanIuran() {
   await _isiFormIuranDariDB(wargaId, bulan, tahun);
 }
 
+// Auto-set nominal saat paket dipilih
+function onUbahKetIuran() {
+  const ket = document.getElementById('i-ket').value;
+  document.getElementById('i-nominal').value = parseInt(ket) || 50000;
+}
+
 // Helper: query DB dan isi form iuran sesuai data yang ada
 async function _isiFormIuranDariDB(wargaId, bulan, tahun) {
   const { data: existing } = await db.from('iuran').select('*')
     .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
 
   if (existing) {
-    // Sudah ada data untuk bulan ini — isi dari DB
     document.getElementById('i-id').value     = existing.id;
     document.getElementById('i-status').value = existing.status;
-    document.getElementById('i-nominal').value = existing.nominal || 50000;
-    const ketVal = existing.keterangan || '';
-    document.getElementById('i-ket').value = ['akomodasi','cicil'].includes(ketVal) ? ketVal : '';
+    // Paksa nominal ke salah satu dari 3 pilihan paket
+    const nom = existing.nominal || 50000;
+    const paket = [50000,70000,20000].includes(nom) ? String(nom) : '50000';
+    document.getElementById('i-ket').value     = paket;
+    document.getElementById('i-nominal').value = parseInt(paket);
   } else {
-    // Belum ada — reset ke default kosong
     document.getElementById('i-id').value      = '';
     document.getElementById('i-status').value  = 'lunas';
+    document.getElementById('i-ket').value     = '50000';
     document.getElementById('i-nominal').value = 50000;
-    document.getElementById('i-ket').value     = '';
   }
 }
 async function saveIuran(e) {
@@ -1135,58 +1146,66 @@ async function saveIuran(e) {
   const ketAkomodasi = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
   const blokWarga    = warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null;
 
-  // Tanggal KAS = tanggal 1 bulan tagihan (bukan tanggal hari ini)
-  // Agar iuran Mei yang dibayar April tetap masuk ke bulan Mei
   const bulanPadded = String(bulan).padStart(2, '0');
   const tglHari     = `${tahun}-${bulanPadded}-01`;
+  const bulanAwal   = tglHari;
+  const bulanAkhir  = `${tahun}-${bulanPadded}-31`;
 
-  // ── HAPUS SEMUA kas lama milik warga+bulan+tahun ini terlebih dahulu ──
-  // Ini mencegah duplikat akibat nama warga berubah, atau saveIuran dipanggil berulang.
-  // Cari semua kas yang terkait iuran ini: filter by warga, bulan/tahun, kategori iuran/masuk
-  const bulanAwal = `${tahun}-${bulanPadded}-01`;
-  const bulanAkhir = `${tahun}-${bulanPadded}-31`;
-
+  // Hapus kas lama warga bulan ini sebelum insert baru
   const { data: kasLamaMasuk } = await db.from('kas').select('id')
     .eq('jenis','masuk').eq('kategori','iuran')
     .eq('blok_warga', blokWarga)
     .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
-  if (kasLamaMasuk && kasLamaMasuk.length > 0) {
-    for (const k of kasLamaMasuk) await db.from('kas').delete().eq('id', k.id);
-  }
+  if (kasLamaMasuk?.length) for (const k of kasLamaMasuk) await db.from('kas').delete().eq('id', k.id);
 
   const { data: kasLamaKeluar } = await db.from('kas').select('id')
     .eq('jenis','keluar').eq('kategori','operasional')
     .eq('blok_warga', blokWarga)
     .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
-  if (kasLamaKeluar && kasLamaKeluar.length > 0) {
-    for (const k of kasLamaKeluar) await db.from('kas').delete().eq('id', k.id);
-  }
+  if (kasLamaKeluar?.length) for (const k of kasLamaKeluar) await db.from('kas').delete().eq('id', k.id);
 
-  // ── Sekarang insert kas baru sesuai status ──────────────────
   if (status === 'lunas') {
-    // Kas masuk iuran
+    // Hitung berdasarkan paket (nilai ket = nominal string)
+    const paket = ket; // '50000' | '70000' | '20000'
+    const nominalBayar = parseInt(paket) || nominal;
+
+    // Kas masuk = nominal yang dibayar warga
     await db.from('kas').insert({
-      tanggal: tglHari, jenis:'masuk', nominal, keterangan:ketKas,
+      tanggal: tglHari, jenis:'masuk', nominal: nominalBayar, keterangan: ketKas,
       kategori:'iuran', created_by:'auto', blok_warga: blokWarga
     });
 
-    // Kas keluar akomodasi (jika dipilih)
-    if (ket === 'akomodasi') {
-      const NOMINAL_AKOMODASI = 45000;
+    // Kas keluar akomodasi (kepotong) sesuai paket
+    let nominalPotong = 0;
+    if (paket === '50000') nominalPotong = 45000;
+    else if (paket === '70000') nominalPotong = 65000;
+    else if (paket === '20000') nominalPotong = 20000; // kepotong semua
+
+    if (nominalPotong > 0) {
       await db.from('kas').insert({
-        tanggal: tglHari, jenis:'keluar', nominal:NOMINAL_AKOMODASI,
+        tanggal: tglHari, jenis:'keluar', nominal: nominalPotong,
         keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
         blok_warga: blokWarga
       });
     }
   }
-  // Status belum lunas → kas sudah dihapus di atas, tidak perlu insert
 
   showToast('Status iuran disimpan!');
   closeModal('modal-iuran');
   document.getElementById('form-iuran').reset();
   logAktivitas('Update Iuran', wargaId);
-  loadIuran(); loadDashboard(); loadKas();
+  // FIX 3: simpan filterBlokIuranAktif sebelum reload agar tidak reset ke Semua
+  const blokSebelum = filterBlokIuranAktif;
+  await loadIuran();
+  // Pulihkan filter blok setelah reload
+  if (blokSebelum) {
+    const chips = document.querySelectorAll('#filter-blok-iuran .filter-chip');
+    chips.forEach(btn => {
+      const blokBtn = btn.textContent.replace('Blok ','').trim();
+      if (blokBtn === blokSebelum) { setFilterBlokIuran(blokSebelum, btn); }
+    });
+  }
+  loadDashboard(); loadKas();
 
   // Otomatis tampilkan bukti pembayaran jika status lunas
   if (status === 'lunas' && finalIuranId) showBuktiPembayaran(wargaId, finalIuranId);
@@ -1328,6 +1347,33 @@ async function deleteKas(id) {
   const { error }=await db.from('kas').delete().eq('id',id);
   if (error) { showToast('Gagal hapus!','error'); return; }
   showToast('Transaksi dihapus!'); logAktivitas('Hapus Kas',id); loadKas(); loadDashboard();
+}
+
+// Bersihkan kas duplikat: per warga+bulan+tahun, sisakan 1 masuk terbaru dan 1 keluar terbaru
+async function bersihkanDoubleKas() {
+  if (!confirm('Hapus semua transaksi kas yang duplikat? Proses ini tidak dapat dibatalkan.')) return;
+  showToast('Sedang membersihkan...', 'info');
+  const { data: semua } = await db.from('kas').select('*').order('created_at', {ascending:true});
+  if (!semua) return;
+
+  const seen = {};
+  const hapusIds = [];
+  for (const k of semua) {
+    const bln = k.tanggal ? k.tanggal.slice(0,7) : 'unknown';
+    const key = `${k.blok_warga}|${bln}|${k.jenis}|${k.kategori}`;
+    if (seen[key]) {
+      // Ini duplikat — tandai untuk dihapus (simpan yang terbaru, hapus yang lama)
+      hapusIds.push(seen[key]); // hapus yang sebelumnya
+      seen[key] = k.id;         // ganti dengan yang ini (lebih baru)
+    } else {
+      seen[key] = k.id;
+    }
+  }
+
+  if (!hapusIds.length) { showToast('Tidak ada duplikat ditemukan!', 'info'); return; }
+  for (const id of hapusIds) await db.from('kas').delete().eq('id', id);
+  showToast(`${hapusIds.length} transaksi duplikat berhasil dihapus!`);
+  loadKas(); loadDashboard();
 }
 function exportKasPDF() {
   const { jsPDF }=window.jspdf, doc=new jsPDF();
