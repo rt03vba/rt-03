@@ -84,12 +84,8 @@
 
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page active">
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="stat-warga">-</div>
-          <div class="stat-label">🏠 Total Warga</div>
-        </div>
-      </div>
+      <!-- hidden elements agar loadDashboard tidak error -->
+      <span id="stat-warga" style="display:none"></span>
       <span id="stat-saldo" style="display:none"></span>
       <span id="stat-lunas" style="display:none"></span>
       <span id="stat-belum" style="display:none"></span>
@@ -106,6 +102,16 @@
           <button class="btn btn-primary btn-sm" id="btn-add-kegiatan" style="display:none" onclick="showModalKegiatan()">+ Tambah</button>
         </div>
         <div id="list-kegiatan"><div class="loading">Memuat...</div></div>
+      </div>
+      <!-- STRUKTUR RT -->
+      <div class="card" id="card-struktur">
+        <div class="card-header">
+          <span class="card-title">🏛️ Struktur Pengurus RT</span>
+          <button class="btn btn-primary btn-sm" id="btn-edit-struktur" onclick="showModalStruktur()" style="display:none">✏️ Edit</button>
+        </div>
+        <div id="struktur-content">
+          <div class="loading">Memuat...</div>
+        </div>
       </div>
     </div>
 
@@ -158,21 +164,6 @@
         <div class="search-bar">
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="Cari nama warga..." oninput="filterIuran(this.value)" id="search-iuran">
-        </div>
-        <!-- Summary lunas/belum - dihitung dari data bulan yang dipilih -->
-        <div id="iuran-summary" style="display:flex;gap:8px;margin:10px 0 4px 0;">
-          <div style="flex:1;background:#E8F5E9;border-radius:10px;padding:10px 12px;text-align:center;">
-            <div id="sum-lunas" style="font-size:22px;font-weight:800;color:#2E7D32;">-</div>
-            <div style="font-size:11px;color:#388E3C;font-weight:600;">✅ Lunas</div>
-          </div>
-          <div style="flex:1;background:#FFF3E0;border-radius:10px;padding:10px 12px;text-align:center;">
-            <div id="sum-belum" style="font-size:22px;font-weight:800;color:#E65100;">-</div>
-            <div style="font-size:11px;color:#EF6C00;font-weight:600;">⏳ Belum</div>
-          </div>
-          <div style="flex:1;background:#E3F2FD;border-radius:10px;padding:10px 12px;text-align:center;">
-            <div id="sum-total" style="font-size:22px;font-weight:800;color:#1565C0;">-</div>
-            <div style="font-size:11px;color:#1976D2;font-weight:600;">🏠 Total</div>
-          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -454,6 +445,42 @@
       <div class="flex-row">
         <button type="submit" class="btn btn-primary">💾 Simpan</button>
         <button type="button" class="btn btn-outline" onclick="closeModal('modal-kegiatan')">Batal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL STRUKTUR RT -->
+<div class="overlay" id="modal-struktur">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🏛️ Edit Struktur Pengurus</span>
+      <button class="modal-close" onclick="closeModal('modal-struktur')">✕</button>
+    </div>
+    <form id="form-struktur" onsubmit="saveStruktur(event)">
+      <div class="form-group">
+        <label>👑 Ketua RT</label>
+        <input type="text" id="s-ketua" placeholder="Nama Ketua RT" required>
+      </div>
+      <div class="form-group">
+        <label>📋 Sekretaris 1</label>
+        <input type="text" id="s-sekretaris1" placeholder="Nama Sekretaris 1">
+      </div>
+      <div class="form-group">
+        <label>📋 Sekretaris 2</label>
+        <input type="text" id="s-sekretaris2" placeholder="Nama Sekretaris 2">
+      </div>
+      <div class="form-group">
+        <label>💰 Bendahara 1</label>
+        <input type="text" id="s-bendahara1" placeholder="Nama Bendahara 1">
+      </div>
+      <div class="form-group">
+        <label>💰 Bendahara 2</label>
+        <input type="text" id="s-bendahara2" placeholder="Nama Bendahara 2">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button type="submit" class="btn btn-primary" style="flex:1">💾 Simpan</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('modal-struktur')" style="flex:1">Batal</button>
       </div>
     </form>
   </div>
@@ -760,7 +787,98 @@ async function loadDashboard() {
   const masuk    = kasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
   const keluar   = kasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
   document.getElementById('stat-saldo').textContent = rp(masuk - keluar);
-  loadPengumuman(); loadKegiatan();
+  loadPengumuman(); loadKegiatan(); loadStruktur();
+}
+
+// ============================================================
+// STRUKTUR RT
+// ============================================================
+const STRUKTUR_KEY = 'rt_struktur';
+
+async function loadStruktur() {
+  const el = document.getElementById('struktur-content');
+  const btnEdit = document.getElementById('btn-edit-struktur');
+  // Tampilkan tombol edit hanya untuk admin
+  if (btnEdit) btnEdit.style.display = currentUser === 'admin' ? 'block' : 'none';
+
+  // Ambil dari Supabase tabel pengaturan (key-value)
+  const { data } = await db.from('pengaturan').select('nilai').eq('kunci', STRUKTUR_KEY).maybeSingle();
+  let s = { ketua:'', sekretaris1:'', sekretaris2:'', bendahara1:'', bendahara2:'' };
+  if (data && data.nilai) {
+    try { s = { ...s, ...JSON.parse(data.nilai) }; } catch(e) {}
+  }
+  renderStruktur(s);
+}
+
+function renderStruktur(s) {
+  const el = document.getElementById('struktur-content');
+  if (!el) return;
+  const box = (icon, jabatan, nama, color) => `
+    <div style="display:flex;align-items:center;gap:10px;background:#F8FAFC;border-radius:10px;padding:10px 14px;margin-bottom:8px;border-left:4px solid ${color};">
+      <div style="width:38px;height:38px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icon}</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.5px;">${jabatan}</div>
+        <div style="font-size:15px;font-weight:700;color:#1E293B;">${nama || '<span style="color:#94A3B8;font-style:italic;">Belum diisi</span>'}</div>
+      </div>
+    </div>`;
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:#64748B;letter-spacing:1px;">RT 03 / RW 12 · Villa Bintaro Asri</div>
+    </div>
+    ${box('⭐','Ketua RT', s.ketua, '#1565C0')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div style="background:#F0FDF4;border-radius:10px;padding:10px;border-left:4px solid #2E7D32;">
+        <div style="font-size:10px;font-weight:700;color:#2E7D32;text-transform:uppercase;">Sekretaris 1</div>
+        <div style="font-size:14px;font-weight:700;color:#1E293B;margin-top:2px;">${s.sekretaris1||'<span style="color:#94A3B8;font-style:italic;font-size:12px;">Belum diisi</span>'}</div>
+      </div>
+      <div style="background:#EFF6FF;border-radius:10px;padding:10px;border-left:4px solid #1976D2;">
+        <div style="font-size:10px;font-weight:700;color:#1976D2;text-transform:uppercase;">Sekretaris 2</div>
+        <div style="font-size:14px;font-weight:700;color:#1E293B;margin-top:2px;">${s.sekretaris2||'<span style="color:#94A3B8;font-style:italic;font-size:12px;">Belum diisi</span>'}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:#F0FDF4;border-radius:10px;padding:10px;border-left:4px solid #388E3C;">
+        <div style="font-size:10px;font-weight:700;color:#388E3C;text-transform:uppercase;">Bendahara 1</div>
+        <div style="font-size:14px;font-weight:700;color:#1E293B;margin-top:2px;">${s.bendahara1||'<span style="color:#94A3B8;font-style:italic;font-size:12px;">Belum diisi</span>'}</div>
+      </div>
+      <div style="background:#FFF8E1;border-radius:10px;padding:10px;border-left:4px solid #F57F17;">
+        <div style="font-size:10px;font-weight:700;color:#F57F17;text-transform:uppercase;">Bendahara 2</div>
+        <div style="font-size:14px;font-weight:700;color:#1E293B;margin-top:2px;">${s.bendahara2||'<span style="color:#94A3B8;font-style:italic;font-size:12px;">Belum diisi</span>'}</div>
+      </div>
+    </div>`;
+}
+
+async function showModalStruktur() {
+  // Isi form dari DB
+  const { data } = await db.from('pengaturan').select('nilai').eq('kunci', STRUKTUR_KEY).maybeSingle();
+  let s = { ketua:'', sekretaris1:'', sekretaris2:'', bendahara1:'', bendahara2:'' };
+  if (data && data.nilai) {
+    try { s = { ...s, ...JSON.parse(data.nilai) }; } catch(e) {}
+  }
+  document.getElementById('s-ketua').value       = s.ketua || '';
+  document.getElementById('s-sekretaris1').value = s.sekretaris1 || '';
+  document.getElementById('s-sekretaris2').value = s.sekretaris2 || '';
+  document.getElementById('s-bendahara1').value  = s.bendahara1 || '';
+  document.getElementById('s-bendahara2').value  = s.bendahara2 || '';
+  openModal('modal-struktur');
+}
+
+async function saveStruktur(e) {
+  e.preventDefault();
+  const s = {
+    ketua:       document.getElementById('s-ketua').value.trim(),
+    sekretaris1: document.getElementById('s-sekretaris1').value.trim(),
+    sekretaris2: document.getElementById('s-sekretaris2').value.trim(),
+    bendahara1:  document.getElementById('s-bendahara1').value.trim(),
+    bendahara2:  document.getElementById('s-bendahara2').value.trim(),
+  };
+  const { error } = await db.from('pengaturan')
+    .upsert({ kunci: STRUKTUR_KEY, nilai: JSON.stringify(s) }, { onConflict: 'kunci' });
+  if (error) { showToast('Gagal simpan: '+error.message, 'error'); return; }
+  showToast('Struktur pengurus disimpan!');
+  closeModal('modal-struktur');
+  renderStruktur(s);
+  logAktivitas('Edit Struktur RT', s.ketua);
 }
 
 // ============================================================
@@ -1025,15 +1143,6 @@ async function loadIuran() {
 }
 function renderIuran(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-iuran');
-  // Update summary lunas/belum berdasarkan data yang dirender (bulan aktif)
-  const jumlahLunas = (data||[]).filter(w => w.iuran && w.iuran.status==='lunas').length;
-  const jumlahBelum = (data||[]).filter(w => !w.iuran || w.iuran.status!=='lunas').length;
-  const elL = document.getElementById('sum-lunas');
-  const elB = document.getElementById('sum-belum');
-  const elT = document.getElementById('sum-total');
-  if (elL) elL.textContent = jumlahLunas;
-  if (elB) elB.textContent = jumlahBelum;
-  if (elT) elT.textContent = (data||[]).length;
   if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
   tbody.innerHTML=data.map(item=>{
     const paket = item.iuran?.keterangan;
@@ -2188,25 +2297,37 @@ async function sinkronBlokKas() {
 }
 
 async function sinkronKasWarga(wargaId, namaKK, blok, nomorRumah) {
+  // FIX: Filter kas by blok_warga (unik per rumah) bukan by nama warga di keterangan
+  // Ini agar jika nama warga diedit (Riyo -> Rio), semua kas lama tetap tersinkron dengan benar
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
     'Juli','Agustus','September','Oktober','November','Desember'];
   const blokWarga = `Blok ${blok}-${nomorRumah}`;
   const { data: iuranList } = await db.from('iuran').select('bulan,tahun').eq('warga_id', wargaId);
   if (!iuranList || !iuranList.length) return;
   for (const iuran of iuranList) {
-    const bulanStr = bulanNama[iuran.bulan];
-    const tahun    = iuran.tahun;
+    const bulanStr    = bulanNama[iuran.bulan];
+    const tahun       = iuran.tahun;
+    const bulanPadded = String(iuran.bulan).padStart(2,'0');
+    const tglAwal     = `${tahun}-${bulanPadded}-01`;
+    const tglAkhir    = `${tahun}-${bulanPadded}-31`;
+    // Query by blok_warga + tanggal + kategori — tidak bergantung pada nama di keterangan
     const { data: kasIuran } = await db.from('kas').select('id')
-      .eq('kategori','iuran').eq('jenis','masuk')
-      .ilike('keterangan', `Iuran ${bulanStr} ${tahun}%`);
+      .eq('kategori','iuran').eq('jenis','masuk').eq('blok_warga', blokWarga)
+      .gte('tanggal', tglAwal).lte('tanggal', tglAkhir);
     for (const k of (kasIuran||[])) {
-      await db.from('kas').update({ keterangan: `Iuran ${bulanStr} ${tahun} - ${namaKK}`, blok_warga: blokWarga }).eq('id', k.id);
+      await db.from('kas').update({
+        keterangan: `Iuran ${bulanStr} ${tahun} - ${namaKK}`,
+        blok_warga: blokWarga
+      }).eq('id', k.id);
     }
     const { data: kasAkomo } = await db.from('kas').select('id')
-      .eq('kategori','operasional').eq('jenis','keluar')
-      .ilike('keterangan', `Akomodasi warga%${bulanStr} ${tahun}%`);
+      .eq('kategori','operasional').eq('jenis','keluar').eq('blok_warga', blokWarga)
+      .gte('tanggal', tglAwal).lte('tanggal', tglAkhir);
     for (const k of (kasAkomo||[])) {
-      await db.from('kas').update({ keterangan: `Akomodasi warga - ${namaKK} ${bulanStr} ${tahun}`, blok_warga: blokWarga }).eq('id', k.id);
+      await db.from('kas').update({
+        keterangan: `Akomodasi warga - ${namaKK} ${bulanStr} ${tahun}`,
+        blok_warga: blokWarga
+      }).eq('id', k.id);
     }
   }
 }
