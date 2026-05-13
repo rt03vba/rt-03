@@ -159,6 +159,21 @@
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="Cari nama warga..." oninput="filterIuran(this.value)" id="search-iuran">
         </div>
+        <!-- Summary lunas/belum - dihitung dari data bulan yang dipilih -->
+        <div id="iuran-summary" style="display:flex;gap:8px;margin:10px 0 4px 0;">
+          <div style="flex:1;background:#E8F5E9;border-radius:10px;padding:10px 12px;text-align:center;">
+            <div id="sum-lunas" style="font-size:22px;font-weight:800;color:#2E7D32;">-</div>
+            <div style="font-size:11px;color:#388E3C;font-weight:600;">✅ Lunas</div>
+          </div>
+          <div style="flex:1;background:#FFF3E0;border-radius:10px;padding:10px 12px;text-align:center;">
+            <div id="sum-belum" style="font-size:22px;font-weight:800;color:#E65100;">-</div>
+            <div style="font-size:11px;color:#EF6C00;font-weight:600;">⏳ Belum</div>
+          </div>
+          <div style="flex:1;background:#E3F2FD;border-radius:10px;padding:10px 12px;text-align:center;">
+            <div id="sum-total" style="font-size:22px;font-weight:800;color:#1565C0;">-</div>
+            <div style="font-size:11px;color:#1976D2;font-weight:600;">🏠 Total</div>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Alamat</th><th>Nama KK</th><th>Status</th><th id="th-iuran-tgl">Tgl Bayar</th><th id="th-iuran-aksi">Aksi</th><th id="th-iuran-bukti">Bukti</th></tr></thead>
@@ -1010,6 +1025,15 @@ async function loadIuran() {
 }
 function renderIuran(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-iuran');
+  // Update summary lunas/belum berdasarkan data yang dirender (bulan aktif)
+  const jumlahLunas = (data||[]).filter(w => w.iuran && w.iuran.status==='lunas').length;
+  const jumlahBelum = (data||[]).filter(w => !w.iuran || w.iuran.status!=='lunas').length;
+  const elL = document.getElementById('sum-lunas');
+  const elB = document.getElementById('sum-belum');
+  const elT = document.getElementById('sum-total');
+  if (elL) elL.textContent = jumlahLunas;
+  if (elB) elB.textContent = jumlahBelum;
+  if (elT) elT.textContent = (data||[]).length;
   if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
   tbody.innerHTML=data.map(item=>{
     const paket = item.iuran?.keterangan;
