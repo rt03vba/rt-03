@@ -2,7 +2,7 @@ import { state, STRUKTUR_KEY } from './state.js';
 import { db } from './supabase.js';
 import * as api from './api.js';
 import * as ui from './ui.js';
-import { showToast, openModal, closeModal, initFilterBulanTahun, rp } from './utils.js';
+import { showToast, openModal, closeModal, initFilterBulanTahun, rp, fmtDate } from './utils.js';
 
 export async function loadDashboard() {
   const now = new Date();
