@@ -1,9 +1,11 @@
 {
   "private": true,
   "scripts": {
-    "build": "esbuild js/main.js --bundle --outfile=dist/bundle.js --minify"
+    "build": "esbuild js/main.js --bundle --outfile=dist/bundle.js --minify",
+    "dev": "serve ."
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "serve": "^14.0.0"
   }
 }
