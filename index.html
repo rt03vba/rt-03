@@ -11,216 +11,974 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" type="image/png" href="icon-192.png">
-  <meta name="theme-color" content="#1565C0">
+  <meta name="theme-color" content="#1A56DB">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="RT 03 App">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* ===== RESET & BASE ===== */
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',sans-serif;background:#F0F4F8;color:#1E293B;min-height:100vh;}
-    input,select,textarea,button{font-family:inherit;}
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  --primary: #1A56DB;
+  --primary-dark: #1345B5;
+  --primary-light: #EBF0FF;
+  --primary-mid: #2563EB;
+  --green: #0E9F6E;
+  --green-light: #E8F8F3;
+  --red: #E02424;
+  --red-light: #FEF2F2;
+  --orange: #FF8A00;
+  --orange-light: #FFF4E5;
+  --yellow: #FBBF24;
+  --text-primary: #111928;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --surface: #F9FAFB;
+  --white: #FFFFFF;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow: 0 2px 8px rgba(0,0,0,0.10);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+  --nav-height: 64px;
+  --top-bar-height: 60px;
+}
 
-    /* ===== TOAST ===== */
-    #toast-container{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;width:90%;max-width:360px;}
-    .toast{padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.15);animation:slideDown .3s ease;}
-    .toast.success{background:#22C55E;}
-    .toast.error{background:#EF4444;}
-    .toast.info{background:#3B82F6;}
-    @keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ===== LOGIN ===== */
-    #login-screen{min-height:100vh;background:linear-gradient(160deg,#EFF6FF 0%,#DBEAFE 40%,#EEF2FF 100%);display:flex;align-items:center;justify-content:center;padding:24px 16px;position:relative;overflow:hidden;}
-    #login-screen::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:rgba(59,130,246,0.08);border-radius:50%;}
-    #login-screen::after{content:'';position:absolute;bottom:-80px;left:-40px;width:260px;height:260px;background:rgba(99,102,241,0.06);border-radius:50%;}
-    .login-card{width:100%;max-width:380px;background:#fff;border-radius:24px;padding:32px 24px 28px;box-shadow:0 8px 40px rgba(30,58,138,0.12);position:relative;z-index:1;}
-    .login-logo{text-align:center;margin-bottom:24px;}
-    .login-logo .logo-img{width:80px;height:80px;border-radius:20px;object-fit:contain;margin-bottom:12px;box-shadow:0 4px 16px rgba(21,101,192,0.15);}
-    .login-logo h2{font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;color:#1E3A5F;letter-spacing:.3px;}
-    .login-logo p{font-size:13px;color:#64748B;margin-top:2px;}
-    .login-greeting{text-align:center;margin-bottom:20px;}
-    .login-greeting h3{font-family:'Poppins',sans-serif;font-size:17px;font-weight:700;color:#1E293B;}
-    .login-greeting p{font-size:12px;color:#94A3B8;margin-top:4px;line-height:1.5;}
-    .login-tabs{display:flex;gap:8px;margin-bottom:20px;background:#F1F5F9;border-radius:12px;padding:4px;}
-    .login-tab{flex:1;padding:10px;border:none;background:transparent;border-radius:9px;font-size:14px;font-weight:600;color:#64748B;cursor:pointer;transition:all .2s;}
-    .login-tab.active{background:#fff;color:#1565C0;box-shadow:0 2px 8px rgba(21,101,192,0.15);}
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--surface);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
 
-    /* ===== APP LAYOUT ===== */
-    #app{display:none;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;background:#F0F4F8;}
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast-container {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 280px;
+  max-width: 90vw;
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--white);
+  box-shadow: var(--shadow-md);
+  animation: slideDown 0.3s ease;
+  pointer-events: all;
+}
+.toast-success { background: var(--green); }
+.toast-error   { background: var(--red); }
+.toast-info    { background: var(--primary); }
+@keyframes slideDown {
+  from { opacity:0; transform:translateY(-12px); }
+  to   { opacity:1; transform:translateY(0); }
+}
 
-    /* ===== TOP BAR ===== */
-    .top-bar{background:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 0 #E2E8F0;position:sticky;top:0;z-index:100;}
-    .top-bar-left{display:flex;align-items:center;gap:10px;}
-    .top-bar-logo-img{width:38px;height:38px;border-radius:10px;object-fit:contain;}
-    .top-bar-title{font-family:'Poppins',sans-serif;font-size:15px;font-weight:800;color:#1E3A5F;line-height:1.2;}
-    .top-bar-subtitle{font-size:11px;color:#94A3B8;font-weight:500;}
-    .top-bar-right{display:flex;align-items:center;gap:8px;}
-    .user-badge{background:#EFF6FF;color:#1565C0;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;border:1.5px solid #BFDBFE;}
-    .logout-btn{background:none;border:none;color:#EF4444;font-size:13px;font-weight:600;cursor:pointer;padding:5px 8px;}
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #1A56DB 0%, #0E3A8C 60%, #060E2D 100%);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+#login-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 70% 20%, rgba(99,163,255,0.18) 0%, transparent 60%);
+  pointer-events: none;
+}
 
-    /* ===== MAIN CONTENT ===== */
-    .main-content{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 32px 28px 28px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+  position: relative;
+}
 
-    /* ===== DASHBOARD RINGKASAN ===== */
-    .dashboard-ringkasan{background:linear-gradient(135deg,#1565C0 0%,#1976D2 60%,#2196F3 100%);border-radius:20px;padding:20px;margin-bottom:16px;color:#fff;box-shadow:0 6px 24px rgba(21,101,192,0.3);}
-    .ringkasan-title{font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;opacity:.85;margin-bottom:14px;letter-spacing:.3px;}
-    .ringkasan-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;}
-    .ringkasan-stat{text-align:center;position:relative;}
-    .ringkasan-stat+.ringkasan-stat::before{content:'';position:absolute;left:0;top:10%;height:80%;width:1px;background:rgba(255,255,255,0.2);}
-    .ringkasan-stat-val{font-family:'Poppins',sans-serif;font-size:22px;font-weight:800;line-height:1;}
-    .ringkasan-stat-label{font-size:10px;opacity:.8;margin-top:4px;font-weight:500;}
-    .ringkasan-stat-icon{font-size:18px;margin-bottom:4px;}
+.login-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.logo-img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(26,86,219,0.18));
+}
+.login-logo h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+.login-logo p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
 
-    /* ===== MENU CEPAT ===== */
-    .menu-cepat{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
-    .menu-cepat-item{background:#fff;border-radius:16px;padding:14px 8px 10px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:none;transition:all .2s;}
-    .menu-cepat-item:active{transform:scale(.96);}
-    .menu-cepat-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:20px;}
-    .menu-cepat-label{font-size:11px;font-weight:600;color:#475569;}
+.login-tabs {
+  display: flex;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 24px;
+  gap: 4px;
+}
+.login-tab {
+  flex: 1;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+.login-tab.active {
+  background: var(--white);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
 
-    /* ===== CARDS ===== */
-    .card{background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,0.06);}
-    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-    .card-title{font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#1E293B;}
-    .card-link{font-size:13px;color:#1565C0;font-weight:600;background:none;border:none;cursor:pointer;}
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="email"],
+select,
+textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.10);
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
-    /* ===== KAS STAT CARDS ===== */
-    .stat-grid{display:grid;gap:10px;margin-bottom:14px;}
-    .stat-card{background:#fff;border-radius:16px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
-    .stat-card.green{background:linear-gradient(135deg,#F0FDF4,#DCFCE7);border:1.5px solid #BBF7D0;}
-    .stat-card.red{background:linear-gradient(135deg,#FFF5F5,#FEE2E2);border:1.5px solid #FECACA;}
-    .stat-card.blue{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1.5px solid #BFDBFE;}
-    .stat-value{font-family:'Poppins',sans-serif;font-size:18px;font-weight:800;color:#1E293B;line-height:1.2;}
-    .stat-label{font-size:11px;color:#64748B;font-weight:500;margin-top:4px;}
-    .stat-card.green .stat-value{color:#15803D;}
-    .stat-card.red .stat-value{color:#DC2626;}
-    .stat-card.blue .stat-value{color:#1565C0;}
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+}
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline {
+  background: var(--white);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-danger {
+  background: var(--red);
+  color: var(--white);
+}
+.btn-warning {
+  background: var(--orange-light);
+  color: var(--orange);
+  border: 1px solid #FFD9A0;
+}
+.btn-success {
+  background: var(--green);
+  color: var(--white);
+}
+.btn-sm {
+  padding: 7px 14px;
+  font-size: 12px;
+  border-radius: 7px;
+}
+.btn:active { opacity: 0.85; transform: scale(0.98); }
 
-    /* Kas saldo big card */
-    .kas-saldo-card{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:16px;padding:18px 20px;margin-bottom:14px;border:1.5px solid #BFDBFE;display:flex;align-items:center;gap:14px;}
-    .kas-saldo-icon{font-size:32px;}
-    .kas-saldo-val{font-family:'Poppins',sans-serif;font-size:24px;font-weight:800;color:#1565C0;}
-    .kas-saldo-label{font-size:12px;color:#64748B;font-weight:500;}
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+#app {
+  display: none;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
-    /* ===== PENGUMUMAN LIST ===== */
-    .pengumuman-item{border-radius:14px;padding:14px;margin-bottom:10px;background:#F8FAFC;border:1.5px solid #E2E8F0;cursor:pointer;transition:all .2s;}
-    .pengumuman-item:hover{border-color:#BFDBFE;background:#EFF6FF;}
-    .pengumuman-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#DBEAFE;color:#1565C0;margin-bottom:6px;letter-spacing:.3px;}
-    .pengumuman-badge.urgent{background:#FEE2E2;color:#DC2626;}
-    .pengumuman-badge.penting{background:#FEF3C7;color:#D97706;}
-    .pengumuman-judul{font-weight:700;font-size:14px;color:#1E293B;margin-bottom:4px;}
-    .pengumuman-isi{font-size:12px;color:#64748B;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-    .pengumuman-tgl{font-size:11px;color:#94A3B8;margin-top:6px;}
-    .pengumuman-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--top-bar-height);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: var(--shadow-sm);
+}
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.top-bar-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.top-bar-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.top-bar-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.user-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.logout-btn {
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--red); color: var(--red); }
 
-    /* ===== KEGIATAN LIST ===== */
-    .kegiatan-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#F8FAFC;border:1.5px solid #E2E8F0;margin-bottom:8px;cursor:pointer;}
-    .kegiatan-date-box{background:#EF4444;color:#fff;border-radius:10px;padding:6px 10px;text-align:center;min-width:42px;flex-shrink:0;}
-    .kegiatan-date-month{font-size:9px;font-weight:700;text-transform:uppercase;opacity:.9;}
-    .kegiatan-date-day{font-size:20px;font-weight:800;line-height:1;}
-    .kegiatan-info{flex:1;}
-    .kegiatan-judul{font-size:14px;font-weight:700;color:#1E293B;}
-    .kegiatan-meta{font-size:11px;color:#94A3B8;margin-top:2px;}
-    .kegiatan-arrow{color:#CBD5E1;font-size:16px;}
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main-content {
+  margin-top: var(--top-bar-height);
+  margin-bottom: var(--nav-height);
+  padding: 16px 14px;
+  flex: 1;
+}
 
-    /* ===== KAS HISTORY ITEM ===== */
-    .kas-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#F8FAFC;border:1.5px solid #E2E8F0;margin-bottom:8px;}
-    .kas-item-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-    .kas-item-icon.masuk{background:#DCFCE7;}
-    .kas-item-icon.keluar{background:#FEE2E2;}
-    .kas-item-info{flex:1;min-width:0;}
-    .kas-item-ket{font-size:13px;font-weight:600;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .kas-item-meta{font-size:11px;color:#94A3B8;margin-top:2px;}
-    .kas-item-nominal{font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;white-space:nowrap;}
-    .kas-item-nominal.masuk{color:#15803D;}
-    .kas-item-nominal.keluar{color:#DC2626;}
+.page { display: none; }
+.page.active { display: block; }
 
-    /* ===== WARGA TABLE ===== */
-    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    table{width:100%;border-collapse:collapse;font-size:13px;}
-    th{background:#F8FAFC;color:#64748B;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px;text-align:left;border-bottom:1.5px solid #E2E8F0;white-space:nowrap;}
-    td{padding:10px 8px;border-bottom:1px solid #F1F5F9;color:#1E293B;vertical-align:middle;}
-    tr:last-child td{border-bottom:none;}
-    tr:hover td{background:#F8FAFC;}
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px 4px;
+  transition: color 0.2s;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.2px;
+}
+.nav-item.active {
+  color: var(--primary);
+}
+.nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  display: block;
+  filter: grayscale(0.3);
+}
+.nav-item.active .nav-icon {
+  filter: none;
+}
 
-    /* ===== BADGES ===== */
-    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
-    .badge-success{background:#DCFCE7;color:#15803D;}
-    .badge-danger{background:#FEE2E2;color:#DC2626;}
-    .badge-warning{background:#FEF3C7;color:#D97706;}
-    .badge-info{background:#DBEAFE;color:#1565C0;}
+/* ============================================================
+   DASHBOARD: SUMMARY CARD (Blue Card)
+   ============================================================ */
+.dashboard-summary {
+  background: linear-gradient(135deg, var(--primary-mid) 0%, var(--primary-dark) 100%);
+  border-radius: var(--radius-lg);
+  padding: 20px 18px;
+  color: var(--white);
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.dashboard-summary::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.dashboard-summary::after {
+  content: '';
+  position: absolute;
+  bottom: -20px; right: 40px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+.summary-title {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 14px;
+  letter-spacing: 0.3px;
+}
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.summary-stat {
+  text-align: center;
+}
+.summary-stat-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.summary-stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.78;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+}
 
-    /* ===== BUTTONS ===== */
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:12px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s;width:100%;margin-top:8px;}
-    .btn-primary{background:linear-gradient(135deg,#1565C0,#1976D2);color:#fff;box-shadow:0 4px 14px rgba(21,101,192,0.3);}
-    .btn-primary:active{transform:scale(.98);}
-    .btn-outline{background:#fff;color:#1565C0;border:1.5px solid #BFDBFE;}
-    .btn-danger{background:#FEE2E2;color:#DC2626;border:1.5px solid #FECACA;}
-    .btn-success{background:#DCFCE7;color:#15803D;border:1.5px solid #BBF7D0;}
-    .btn-sm{padding:6px 12px;font-size:12px;border-radius:9px;margin-top:0;width:auto;}
+/* ============================================================
+   QUICK MENU
+   ============================================================ */
+.quick-menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.quick-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+}
+.quick-menu-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: var(--shadow-sm);
+}
+.quick-menu-icon.blue   { background: var(--primary-light); }
+.quick-menu-icon.orange { background: var(--orange-light); }
+.quick-menu-icon.green  { background: var(--green-light); }
+.quick-menu-icon.purple { background: #F5F0FF; }
+.quick-menu-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
 
-    /* ===== SEARCH & FILTER ===== */
-    .search-bar{display:flex;align-items:center;gap:10px;background:#F1F5F9;border-radius:12px;padding:10px 14px;margin-bottom:12px;}
-    .search-bar input{flex:1;border:none;background:transparent;font-size:14px;color:#1E293B;outline:none;}
-    .search-bar input::placeholder{color:#94A3B8;}
-    .search-icon{font-size:16px;flex-shrink:0;}
-    .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-    .filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid #E2E8F0;background:#fff;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;transition:all .2s;white-space:nowrap;}
-    .filter-chip.active{background:#1565C0;color:#fff;border-color:#1565C0;}
-    .kas-filter-row{display:flex;gap:8px;margin-bottom:8px;}
-    .flex-row{display:flex;gap:8px;align-items:center;}
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(229,231,235,0.7);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.lihat-semua {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+}
 
-    /* ===== FORMS ===== */
-    .form-group{margin-bottom:14px;}
-    .form-group label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px;}
-    .form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:12px;font-size:14px;color:#1E293B;background:#fff;outline:none;transition:border-color .2s;}
-    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#1565C0;}
-    .form-group textarea{min-height:80px;resize:vertical;}
+/* ============================================================
+   STAT CARDS (Kas)
+   ============================================================ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.stat-card.green {
+  background: var(--green-light);
+  border-color: #A7F3D0;
+}
+.stat-card.red {
+  background: var(--red-light);
+  border-color: #FECACA;
+}
+.stat-card.blue {
+  background: var(--primary-light);
+  border-color: #BFDBFE;
+}
+.stat-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+.stat-card.green .stat-value { color: var(--green); }
+.stat-card.red   .stat-value { color: var(--red); }
+.stat-card.blue  .stat-value { color: var(--primary); }
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
 
-    /* ===== MODALS ===== */
-    .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:1000;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);}
-    .overlay.active{display:flex;}
-    .modal{background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
-    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #F1F5F9;}
-    .modal-title{font-family:'Poppins',sans-serif;font-size:16px;font-weight:700;color:#1E293B;}
-    .modal-close{width:32px;height:32px;border-radius:50%;background:#F1F5F9;border:none;cursor:pointer;font-size:16px;color:#64748B;display:flex;align-items:center;justify-content:center;}
+/* Saldo full width */
+#page-kas .stat-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
 
-    /* ===== BOTTOM NAV ===== */
-    .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;border-top:1px solid #E2E8F0;display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.06);}
-    .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;background:none;border:none;cursor:pointer;color:#94A3B8;font-size:10px;font-weight:600;transition:color .2s;}
-    .nav-icon{font-size:22px;line-height:1;}
-    .nav-item.active{color:#1565C0;}
-    .nav-item.active .nav-icon{filter:none;}
+/* ============================================================
+   SEARCH BAR
+   ============================================================ */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.search-bar:focus-within {
+  border-color: var(--primary);
+  background: var(--white);
+}
+.search-icon { font-size: 16px; margin-right: 8px; opacity: 0.5; }
+.search-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 14px;
+  outline: none;
+  box-shadow: none;
+}
+.search-bar input:focus { box-shadow: none; }
 
-    /* ===== PAGE ===== */
-    .page{display:none;}
-    .page.active{display:block;}
+/* ============================================================
+   FILTER CHIPS
+   ============================================================ */
+.filter-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+}
+.filter-chip.active, .filter-chip:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+}
 
-    /* ===== WARGA ITEM (modern list) ===== */
-    .warga-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#F8FAFC;border:1.5px solid #E2E8F0;margin-bottom:8px;}
-    .warga-avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#1565C0,#2196F3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0;}
-    .warga-name{font-size:14px;font-weight:700;color:#1E293B;}
-    .warga-sub{font-size:11px;color:#94A3B8;margin-top:2px;}
+/* ============================================================
+   TABLE
+   ============================================================ */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  background: var(--surface);
+  padding: 10px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody tr {
+  border-bottom: 1px solid #F3F4F6;
+  transition: background 0.15s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #F9FAFB; }
+tbody td {
+  padding: 11px 10px;
+  vertical-align: middle;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.click-name {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.click-name:hover { text-decoration: underline; }
 
-    /* ===== PROFIL ===== */
-    .profil-row{display:flex;gap:10px;align-items:center;padding:12px;background:#F8FAFC;border-radius:12px;margin-bottom:8px;}
-    .profil-icon{font-size:20px;width:36px;text-align:center;}
-    .profil-label{font-size:11px;color:#94A3B8;font-weight:500;}
-    .profil-val{font-size:14px;font-weight:600;color:#1E293B;}
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.badge-success { background: var(--green-light); color: var(--green); }
+.badge-danger  { background: var(--red-light);   color: var(--red); }
+.badge-warning { background: var(--orange-light); color: var(--orange); }
+.badge-info    { background: var(--primary-light); color: var(--primary); }
 
-    /* ===== MISC ===== */
-    .loading{text-align:center;color:#94A3B8;padding:32px;font-size:14px;}
-    .empty-state{text-align:center;padding:32px 16px;color:#94A3B8;}
-    .empty-state svg,.empty-state .empty-icon{font-size:48px;margin-bottom:12px;display:block;}
-    .empty-state p{font-size:14px;}
-    a{color:#1565C0;text-decoration:none;}
+/* ============================================================
+   IURAN SUMMARY CARDS
+   ============================================================ */
+#iuran-summary {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+#iuran-summary > div {
+  flex: 1;
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  text-align: center;
+}
 
-    /* ===== SCROLLBAR ===== */
-    ::-webkit-scrollbar{width:4px;}
-    ::-webkit-scrollbar-track{background:transparent;}
-    ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px;}
+/* ============================================================
+   KAS FILTER ROWS
+   ============================================================ */
+.kas-filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+/* ============================================================
+   PENGUMUMAN & KEGIATAN LIST
+   ============================================================ */
+.announcement-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.announcement-item:last-child { border-bottom: none; }
+
+.event-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #F3F4F6;
+  align-items: center;
+}
+.event-item:last-child { border-bottom: none; }
+.event-date-box {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-align: center;
+  min-width: 48px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(17,25,40,0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.overlay.show {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal {
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 20px 20px 32px;
+  animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity:0; }
+  to   { transform: translateY(0);   opacity:1; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+.modal-close:hover { background: var(--border); }
+
+/* Modal pull handle */
+.modal::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+/* ============================================================
+   EMPTY STATE / LOADING
+   ============================================================ */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.empty-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+.loading {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ============================================================
+   FLEX ROW
+   ============================================================ */
+.flex-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   PROFIL PAGE
+   ============================================================ */
+#page-profil .card {
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ============================================================
+   ADDITIONAL POLISH
+   ============================================================ */
+
+/* Login screen illustration */
+#login-screen::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 200px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 200'%3E%3Cpath fill='rgba(255,255,255,0.04)' d='M0,128L48,117.3C96,107,192,85,288,90.7C384,96,480,128,576,128C672,128,768,96,864,85.3C960,75,1056,85,1152,96C1248,107,1344,117,1392,122.7L1440,128L1440,200L0,200Z'/%3E%3C/svg%3E") no-repeat bottom;
+  background-size: cover;
+  pointer-events: none;
+}
+
+/* Generate button special style */
+#btn-generate-iuran {
+  background: linear-gradient(135deg, #FF8A00, #E65100) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Warga list row - name link */
+.click-name { font-weight: 600; color: var(--primary); }
+
+/* Badge override consistency */
+.badge { border-radius: 6px; }
+
+/* Card slight hover lift */
+.card { transition: box-shadow 0.2s; }
+.card:hover { box-shadow: var(--shadow); }
+
+/* Select arrow custom */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px !important;
+}
+
+/* Kas filter row spacing */
+.kas-filter-row { margin-bottom: 8px; }
+
+/* Profil page content padding */
+#profil-content { color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+
+/* Table action buttons */
+tbody td .btn { padding: 6px 10px; font-size: 12px; }
+
+/* Loading spinner */
+.loading::before {
+  content: '';
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Announcement item styling */
+#list-pengumuman > div > div:first-child { margin-bottom: 6px; }
+#list-kegiatan > div { padding: 10px 0; border-bottom: 1px solid #F3F4F6; }
+#list-kegiatan > div:last-child { border-bottom: none; }
+
+/* Modal overlay align center on larger screens */
+@media (min-width: 520px) {
+  .overlay { align-items: center; padding: 20px; }
+  .modal { border-radius: 20px; max-height: 80vh; }
+  .modal::before { display: none; }
+}
+
+/* Quick menu item hover */
+.quick-menu-item:hover .quick-menu-icon { transform: translateY(-2px); transition: transform 0.2s; }
+
+/* Dashboard summary card bell notification */
+.summary-notif {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 32px; height: 32px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+/* Responsive table font size */
+@media (max-width: 380px) {
+  tbody td { font-size: 12px; padding: 9px 7px; }
+  thead th { font-size: 10px; padding: 8px 7px; }
+}
+
   </style>
 </head>
 <body>
@@ -237,13 +995,10 @@
       <h2>RT 03 / RW 12</h2>
       <p>Villa Bintaro Asri</p>
     </div>
-    <div class="login-greeting">
-      <h3>Selamat datang 👋</h3>
-      <p>Masuk untuk mengelola informasi<br>dan keuangan RT 03 / RW 12</p>
-    </div>
+    <p style="text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:20px;line-height:1.5;">Masuk untuk mengelola informasi<br>dan keuangan RT 03 / RW 12</p>
     <div class="login-tabs">
-      <button class="login-tab active" onclick="switchLoginTab('admin')">🛡️ Admin</button>
-      <button class="login-tab" onclick="switchLoginTab('warga')">👤 Warga</button>
+      <button class="login-tab active" onclick="switchLoginTab('admin')">&#x1F510; Admin</button>
+      <button class="login-tab" onclick="switchLoginTab('warga')">&#x1F464; Warga</button>
     </div>
     <div id="login-form-admin">
       <div class="form-group">
@@ -253,7 +1008,7 @@
           <button type="button" onclick="togglePass('admin-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
         </div>
       </div>
-      <button class="btn btn-primary" style="margin-top:4px;" onclick="loginAdmin()">🔐 Masuk sebagai Admin</button>
+      <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="loginAdmin()">🔐 Masuk sebagai Admin</button>
     </div>
     <div id="login-form-warga" style="display:none">
       <div class="form-group">
@@ -267,7 +1022,7 @@
           <button type="button" onclick="togglePass('warga-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
         </div>
       </div>
-      <button class="btn btn-primary" style="margin-top:4px;" onclick="loginWarga()">🏠 Masuk sebagai Warga</button>
+      <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="loginWarga()">🏠 Masuk sebagai Warga</button>
     </div>
   </div>
 </div>
@@ -281,7 +1036,7 @@
       <img class="top-bar-logo-img" src="logo.png" alt="Logo RT 03">
       <div>
         <div class="top-bar-title">RT 03 / RW 12</div>
-        <div class="top-bar-subtitle" id="current-page-title">Villa Bintaro Asri</div>
+        <div class="top-bar-subtitle">Villa Bintaro Asri</div>
       </div>
     </div>
     <div class="top-bar-right">
@@ -294,72 +1049,77 @@
 
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page active">
-      <!-- hidden stat elements agar loadDashboard tidak error -->
+      <!-- hidden elements agar loadDashboard tidak error -->
       <span id="stat-warga" style="display:none"></span>
       <span id="stat-saldo" style="display:none"></span>
       <span id="stat-lunas" style="display:none"></span>
       <span id="stat-belum" style="display:none"></span>
 
-      <!-- Ringkasan biru -->
-      <div class="dashboard-ringkasan">
-        <div class="ringkasan-title">📊 Ringkasan</div>
-        <div class="ringkasan-stats">
-          <div class="ringkasan-stat">
-            <div class="ringkasan-stat-icon">🏠</div>
-            <div class="ringkasan-stat-val" id="dash-total-warga">-</div>
-            <div class="ringkasan-stat-label">Warga</div>
+      <!-- Blue summary card -->
+      <div class="dashboard-summary">
+        <div class="summary-title">Ringkasan RT 03 / RW 12</div>
+        <div class="summary-stats">
+          <div class="summary-stat">
+            <div class="summary-stat-value" id="dash-warga">-</div>
+            <div class="summary-stat-label">Total Warga</div>
           </div>
-          <div class="ringkasan-stat">
-            <div class="ringkasan-stat-icon">✅</div>
-            <div class="ringkasan-stat-val" id="dash-lunas">-</div>
-            <div class="ringkasan-stat-label" id="dash-lunas-label">Iuran Lunas</div>
+          <div class="summary-stat">
+            <div class="summary-stat-value" id="dash-lunas">-</div>
+            <div class="summary-stat-label">Iuran Lunas<br>Bulan Ini</div>
           </div>
-          <div class="ringkasan-stat">
-            <div class="ringkasan-stat-icon">💰</div>
-            <div class="ringkasan-stat-val" id="dash-saldo" style="font-size:15px;">-</div>
-            <div class="ringkasan-stat-label">Saldo Kas</div>
+          <div class="summary-stat">
+            <div class="summary-stat-value" id="dash-saldo" style="font-size:14px;">-</div>
+            <div class="summary-stat-label">Saldo Kas</div>
           </div>
         </div>
       </div>
 
-      <!-- Menu Cepat -->
-      <div class="menu-cepat">
-        <button class="menu-cepat-item" onclick="navigateTo('warga', document.querySelectorAll('.nav-item')[1])">
-          <div class="menu-cepat-icon" style="background:#EFF6FF;">👥</div>
-          <div class="menu-cepat-label">Warga</div>
-        </button>
-        <button class="menu-cepat-item" onclick="navigateTo('iuran', document.querySelectorAll('.nav-item')[2])">
-          <div class="menu-cepat-icon" style="background:#FEF3C7;">💳</div>
-          <div class="menu-cepat-label">Iuran</div>
-        </button>
-        <button class="menu-cepat-item" onclick="navigateTo('kas', document.querySelectorAll('.nav-item')[3])">
-          <div class="menu-cepat-icon" style="background:#DCFCE7;">💰</div>
-          <div class="menu-cepat-label">Kas RT</div>
-        </button>
-        <button class="menu-cepat-item" onclick="navigateTo('dashboard', document.querySelectorAll('.nav-item')[0]); setTimeout(()=>document.getElementById('list-pengumuman').scrollIntoView({behavior:'smooth'}),200)">
-          <div class="menu-cepat-icon" style="background:#FEE2E2;">📢</div>
-          <div class="menu-cepat-label">Pengumuman</div>
-        </button>
+      <!-- Quick Menu -->
+      <div class="quick-menu">
+        <div class="quick-menu-item" onclick="navigateTo('warga', document.querySelectorAll('.nav-item')[1])">
+          <div class="quick-menu-icon blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
+          </div>
+          <span class="quick-menu-label">Warga</span>
+        </div>
+        <div class="quick-menu-item" onclick="navigateTo('iuran', document.querySelectorAll('.nav-item')[2])">
+          <div class="quick-menu-icon orange">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF8A00" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          </div>
+          <span class="quick-menu-label">Iuran</span>
+        </div>
+        <div class="quick-menu-item" onclick="navigateTo('kas', document.querySelectorAll('.nav-item')[3])">
+          <div class="quick-menu-icon green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <span class="quick-menu-label">Kas RT</span>
+        </div>
+        <div class="quick-menu-item" onclick="navigateTo('profil', document.querySelectorAll('.nav-item')[4])">
+          <div class="quick-menu-icon purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <span class="quick-menu-label">Pengumuman</span>
+        </div>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <span class="card-title">📢 Pengumuman Terbaru</span>
-          <button class="card-link" id="btn-add-pengumuman" style="display:none" onclick="showModalPengumuman()">+ Tambah</button>
+          <span class="card-title">Pengumuman Terbaru</span>
+          <button class="btn btn-primary btn-sm" id="btn-add-pengumuman" style="display:none" onclick="showModalPengumuman()">+ Tambah</button>
         </div>
         <div id="list-pengumuman"><div class="loading">Memuat...</div></div>
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">📅 Kegiatan Mendatang</span>
-          <button class="card-link" id="btn-add-kegiatan" style="display:none" onclick="showModalKegiatan()">+ Tambah</button>
+          <span class="card-title">Kegiatan Mendatang</span>
+          <button class="btn btn-primary btn-sm" id="btn-add-kegiatan" style="display:none" onclick="showModalKegiatan()">+ Tambah</button>
         </div>
         <div id="list-kegiatan"><div class="loading">Memuat...</div></div>
       </div>
       <!-- STRUKTUR RT -->
       <div class="card" id="card-struktur">
         <div class="card-header">
-          <span class="card-title">🏛️ Struktur Pengurus RT</span>
+          <span class="card-title">Struktur Pengurus RT</span>
           <button class="btn btn-primary btn-sm" id="btn-edit-struktur" onclick="showModalStruktur()" style="display:none">✏️ Edit</button>
         </div>
         <div id="struktur-content">
@@ -372,7 +1132,7 @@
     <div id="page-warga" class="page">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">👥 Daftar Warga</span>
+          <span class="card-title">Daftar Warga</span>
           <div style="display:flex;gap:6px;">
             <button class="btn btn-outline btn-sm" id="btn-sinkron-warga" onclick="sinkronSemuaWarga()" style="display:none;font-size:11px;">🔄 Sinkron</button>
             <button class="btn btn-primary btn-sm" id="btn-tambah-warga" onclick="showModalTambahWarga()" style="display:none">+ Tambah</button>
@@ -404,12 +1164,12 @@
     <div id="page-iuran" class="page">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">💳 Iuran Warga</span>
-          <button class="btn btn-primary btn-sm" id="btn-generate-iuran" onclick="generateIuranBulanan()" style="display:none">⚡ Generate</button>
+          <span class="card-title">Iuran Warga</span>
+          <button class="btn btn-primary btn-sm" id="btn-generate-iuran" onclick="generateIuranBulanan()" style="display:none;background:var(--primary);color:white;border:none;">⚡ Generate</button>
         </div>
         <div class="flex-row" style="margin-bottom:12px;">
-          <select id="filter-bulan-iuran" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
-          <select id="filter-tahun-iuran" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;"></select>
+          <select id="filter-bulan-iuran" style="flex:1;"></select>
+          <select id="filter-tahun-iuran" style="width:100px;"></select>
         </div>
         <div class="filter-row" id="filter-blok-iuran">
           <button class="filter-chip active" onclick="setFilterBlokIuran('',this)">Semua</button>
@@ -419,17 +1179,17 @@
           <input type="text" placeholder="Cari nama warga..." oninput="filterIuran(this.value)" id="search-iuran">
         </div>
         <div id="iuran-summary" style="display:flex;gap:8px;margin:10px 0 4px 0;">
-          <div style="flex:1;background:#E8F5E9;border-radius:10px;padding:10px 12px;text-align:center;">
-            <div id="sum-lunas" style="font-size:22px;font-weight:800;color:#2E7D32;">-</div>
-            <div style="font-size:11px;color:#388E3C;font-weight:600;">✅ Lunas</div>
+          <div style="flex:1;background:var(--green-light);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;border:1px solid #A7F3D0;">
+            <div id="sum-lunas" style="font-size:22px;font-weight:800;color:var(--green);">-</div>
+            <div style="font-size:11px;color:var(--green);font-weight:600;">Lunas</div>
           </div>
-          <div style="flex:1;background:#FFF3E0;border-radius:10px;padding:10px 12px;text-align:center;">
-            <div id="sum-belum" style="font-size:22px;font-weight:800;color:#E65100;">-</div>
-            <div style="font-size:11px;color:#EF6C00;font-weight:600;">⏳ Belum</div>
+          <div style="flex:1;background:var(--orange-light);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;border:1px solid #FFD9A0;">
+            <div id="sum-belum" style="font-size:22px;font-weight:800;color:var(--orange);">-</div>
+            <div style="font-size:11px;color:var(--orange);font-weight:600;">Belum</div>
           </div>
-          <div style="flex:1;background:#E3F2FD;border-radius:10px;padding:10px 12px;text-align:center;">
-            <div id="sum-total" style="font-size:22px;font-weight:800;color:#1565C0;">-</div>
-            <div style="font-size:11px;color:#1976D2;font-weight:600;">🏠 Total</div>
+          <div style="flex:1;background:var(--primary-light);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;border:1px solid #BFDBFE;">
+            <div id="sum-total" style="font-size:22px;font-weight:800;color:var(--primary);">-</div>
+            <div style="font-size:11px;color:var(--primary);font-weight:600;">Total</div>
           </div>
         </div>
         <div class="table-wrap">
@@ -443,41 +1203,38 @@
 
     <!-- KAS RT -->
     <div id="page-kas" class="page">
-      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="stat-grid" style="grid-template-columns: 1fr 1fr;margin-bottom:10px;">
         <div class="stat-card green">
           <div class="stat-value" id="kas-masuk-total">-</div>
-          <div class="stat-label">📥 Total Masuk</div>
+          <div class="stat-label">Total Masuk</div>
         </div>
         <div class="stat-card red">
           <div class="stat-value" id="kas-keluar-total">-</div>
-          <div class="stat-label">📤 Total Keluar</div>
+          <div class="stat-label">Total Keluar</div>
         </div>
       </div>
-      <div class="kas-saldo-card">
-        <div class="kas-saldo-icon">💰</div>
-        <div>
-          <div class="kas-saldo-label">Saldo Kas</div>
-          <div class="kas-saldo-val" id="kas-saldo">-</div>
-        </div>
+      <div class="stat-card blue" style="margin-bottom:14px;border-radius:var(--radius);padding:14px;text-align:center;border:1px solid #BFDBFE;">
+        <div class="stat-value blue" id="kas-saldo" style="font-size:20px;color:var(--primary);">-</div>
+        <div class="stat-label">Saldo Kas</div>
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">📋 Riwayat Kas</span>
+          <span class="card-title">Riwayat Kas</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-            <button class="btn btn-outline btn-sm" id="btn-bersih-kas" onclick="bersihkanDoubleKas()" style="display:none;font-size:11px;color:#E53935;border-color:#E53935;">🧹</button>
-            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄</button>
-            <button class="card-link" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">Laporan</button>
+            <button class="btn btn-outline btn-sm" id="btn-bersih-kas" onclick="bersihkanDoubleKas()" style="display:none;font-size:11px;color:#E53935;border-color:#E53935;">🧹 Bersihkan</button>
+            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄 Sinkron</button>
+            <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
           </div>
         </div>
         <div class="kas-filter-row">
-          <select id="filter-kas-jenis" onchange="applyFilterKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+          <select id="filter-kas-jenis" onchange="applyFilterKas()" style="flex:1;">
             <option value="">Semua Transaksi</option>
             <option value="masuk">📥 Kas Masuk</option>
             <option value="keluar">📤 Kas Keluar</option>
           </select>
         </div>
         <div class="kas-filter-row" style="margin-top:8px;">
-          <select id="filter-kas-kategori" onchange="applyFilterKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+          <select id="filter-kas-kategori" onchange="applyFilterKas()" style="flex:1;">
             <option value="">Semua Kategori</option>
             <option value="iuran">💳 Iuran</option>
             <option value="operasional">⚙️ Operasional</option>
@@ -487,7 +1244,7 @@
           </select>
         </div>
         <div class="flex-row" style="margin-top:8px;gap:8px;">
-          <select id="filter-kas-bulan" onchange="applyFilterKas()" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+          <select id="filter-kas-bulan" onchange="applyFilterKas()" style="flex:1;">
             <option value="">Semua Bulan</option>
             <option value="01">Januari</option><option value="02">Februari</option>
             <option value="03">Maret</option><option value="04">April</option>
@@ -496,7 +1253,7 @@
             <option value="09">September</option><option value="10">Oktober</option>
             <option value="11">November</option><option value="12">Desember</option>
           </select>
-          <select id="filter-kas-tahun" onchange="applyFilterKas()" style="width:95px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;">
+          <select id="filter-kas-tahun" onchange="applyFilterKas()" style="width:100px;">
             <option value="">Semua Tahun</option>
           </select>
           <button class="btn btn-outline btn-sm" onclick="resetFilterKas()" style="white-space:nowrap;padding:10px 12px;">↺ Reset</button>
@@ -509,17 +1266,17 @@
           <!-- Ringkasan filter bulan -->
           <div id="kas-filter-summary" style="display:none;margin-bottom:12px;">
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <div style="flex:1;min-width:90px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px 12px;text-align:center;">
-                <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Total Masuk</div>
-                <div id="summary-masuk" style="font-size:15px;font-weight:800;color:#2E7D32;">Rp 0</div>
+              <div style="flex:1;min-width:90px;background:var(--green-light);border:1px solid #A7F3D0;border-radius:var(--radius-sm);padding:10px 12px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:500;">Total Masuk</div>
+                <div id="summary-masuk" style="font-size:14px;font-weight:800;color:var(--green);">Rp 0</div>
               </div>
-              <div style="flex:1;min-width:90px;background:#FFF5F5;border:1.5px solid #FECACA;border-radius:10px;padding:10px 12px;text-align:center;">
-                <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Total Keluar</div>
-                <div id="summary-keluar" style="font-size:15px;font-weight:800;color:#C62828;">Rp 0</div>
+              <div style="flex:1;min-width:90px;background:var(--red-light);border:1px solid #FECACA;border-radius:var(--radius-sm);padding:10px 12px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:500;">Total Keluar</div>
+                <div id="summary-keluar" style="font-size:14px;font-weight:800;color:var(--red);">Rp 0</div>
               </div>
-              <div style="flex:1;min-width:90px;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 12px;text-align:center;">
-                <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Saldo</div>
-                <div id="summary-saldo" style="font-size:15px;font-weight:800;color:#1565C0;">Rp 0</div>
+              <div style="flex:1;min-width:90px;background:var(--primary-light);border:1px solid #BFDBFE;border-radius:var(--radius-sm);padding:10px 12px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:500;">Saldo</div>
+                <div id="summary-saldo" style="font-size:14px;font-weight:800;color:var(--primary);">Rp 0</div>
               </div>
             </div>
           </div>
@@ -540,12 +1297,12 @@
     <!-- PROFIL -->
     <div id="page-profil" class="page">
       <div class="card">
-        <div class="card-title" style="margin-bottom:16px;">👤 Informasi Akun</div>
+        <div class="card-title" style="margin-bottom:16px;">Informasi Akun</div>
         <div id="profil-content"></div>
       </div>
       <div class="card" id="log-card" style="display:none">
         <div class="card-header">
-          <span class="card-title">📝 Log Aktivitas Admin</span>
+          <span class="card-title">Log Aktivitas</span>
           <button class="btn btn-danger btn-sm" onclick="clearLog()">Hapus Log</button>
         </div>
         <div id="list-log"></div>
@@ -556,24 +1313,29 @@
 
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="navigateTo('dashboard', this)">
-      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 21V12h6v9" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
-      Dashboard
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </span>Dashboard
     </button>
     <button class="nav-item" onclick="navigateTo('warga', this)">
-      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="7" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M21 20c0-2.8-1.8-5-4-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-      Warga
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
+      </span>Warga
     </button>
     <button class="nav-item" onclick="navigateTo('iuran', this)">
-      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/><path d="M6 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-      Iuran
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      </span>Iuran
     </button>
     <button class="nav-item" onclick="navigateTo('kas', this)">
-      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v1m0 8v1M9.5 9.5C9.5 8.7 10.6 8 12 8s2.5.7 2.5 1.5S13.4 11 12 11s-2.5.7-2.5 1.5S10.6 16 12 16s2.5-.7 2.5-1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
-      Kas RT
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg>
+      </span>Kas RT
     </button>
     <button class="nav-item" onclick="navigateTo('profil', this)">
-      <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
-      Profil
+      <span class="nav-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </span>Profil
     </button>
   </nav>
 </div>
@@ -635,7 +1397,7 @@
       <div class="form-group">
         <label>Tagihan Bulan</label>
         <div style="display:flex;gap:8px;">
-          <select id="i-bulan-tagihan" style="flex:1;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;" onchange="onUbahBulanIuran()">
+          <select id="i-bulan-tagihan" style="flex:1;" onchange="onUbahBulanIuran()">
             <option value="1">Januari</option><option value="2">Februari</option>
             <option value="3">Maret</option><option value="4">April</option>
             <option value="5">Mei</option><option value="6">Juni</option>
@@ -643,7 +1405,7 @@
             <option value="9">September</option><option value="10">Oktober</option>
             <option value="11">November</option><option value="12">Desember</option>
           </select>
-          <select id="i-tahun-tagihan" style="width:90px;padding:10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:14px;" onchange="onUbahBulanIuran()"></select>
+          <select id="i-tahun-tagihan" style="width:100px;" onchange="onUbahBulanIuran()"></select>
         </div>
       </div>
       <div class="form-group">
@@ -739,7 +1501,7 @@
 <div class="overlay" id="modal-struktur">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">🏛️ Edit Struktur Pengurus</span>
+      <span class="modal-title">Edit Struktur Pengurus</span>
       <button class="modal-close" onclick="closeModal('modal-struktur')">✕</button>
     </div>
     <form id="form-struktur" onsubmit="saveStruktur(event)">
@@ -892,8 +1654,10 @@ function navigateTo(page, btn) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   btn.classList.add('active');
-  const titles = { dashboard:'Villa Bintaro Asri', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
-  document.getElementById('current-page-title').textContent = titles[page] || page;
+  const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
+  // current-page-title dihapus dari DOM, skip jika tidak ada
+  const cpEl = document.getElementById('current-page-title');
+  if(cpEl) cpEl.textContent = titles[page] || page;
   // FIX: simpan halaman terakhir agar dipulihkan saat refresh
   localStorage.setItem('rt_last_page', page);
   if (page==='warga')  loadWarga();
@@ -1072,16 +1836,10 @@ async function loadDashboard() {
   const masuk    = kasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
   const keluar   = kasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
   document.getElementById('stat-saldo').textContent = rp(masuk - keluar);
-  // Isi elemen dashboard ringkasan baru
-  const bulanNamaD=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-  const elW=document.getElementById('dash-total-warga');
-  const elL=document.getElementById('dash-lunas');
-  const elLL=document.getElementById('dash-lunas-label');
-  const elS=document.getElementById('dash-saldo');
-  if(elW) elW.textContent=totalWarga;
-  if(elL) elL.textContent=lunas;
-  if(elLL) elLL.textContent=`Lunas ${bulanNamaD[bln]} ${thn}`;
-  if(elS) elS.textContent=rp(masuk-keluar);
+  // Update summary card on dashboard
+  const dW = document.getElementById('dash-warga'); if(dW) dW.textContent = totalWarga;
+  const dL = document.getElementById('dash-lunas'); if(dL) dL.textContent = lunas;
+  const dS = document.getElementById('dash-saldo'); if(dS) dS.textContent = rp(masuk - keluar);
   loadPengumuman(); loadKegiatan(); loadStruktur();
 }
 
@@ -1248,19 +2006,14 @@ async function loadPengumuman() {
   if (!data||!data.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Belum ada pengumuman</div>'; return; }
   const priColor = { normal:'badge-info', penting:'badge-warning', urgent:'badge-danger' };
   el.innerHTML = data.map(p=>`
-    <div class="pengumuman-item">
-      <div class="pengumuman-row">
-        <div style="flex:1;">
-          <span class="pengumuman-badge ${priColor[p.prioritas]||'badge-info'}">${p.prioritas.toUpperCase()}</span>
-          <div class="pengumuman-judul">${p.judul}</div>
-          <div class="pengumuman-isi">${p.isi}</div>
-          <div class="pengumuman-tgl">${fmtDate(p.created_at)}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-          ${currentUser==='admin'?`<button onclick="deletePengumuman('${p.id}')" style="background:none;border:none;color:#94A3B8;cursor:pointer;font-size:16px;">🗑️</button>`:''}
-          <span style="color:#CBD5E1;font-size:18px;">›</span>
-        </div>
+    <div style="padding:12px 0;border-bottom:1px solid #F0F0F0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span class="badge ${priColor[p.prioritas]||'badge-info'}">${p.prioritas.toUpperCase()}</span>
+        <span style="font-weight:700;font-size:14px;">${p.judul}</span>
+        ${currentUser==='admin'?`<button onclick="deletePengumuman('${p.id}')" style="margin-left:auto;background:none;border:none;color:#E53935;cursor:pointer;font-size:12px;">🗑️</button>`:''}
       </div>
+      <div style="font-size:13px;color:#555;line-height:1.5;">${p.isi}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px;">${fmtDate(p.created_at)}</div>
     </div>`).join('');
 }
 function showModalPengumuman() {
@@ -1284,22 +2037,18 @@ async function loadKegiatan() {
   const { data } = await db.from('kegiatan').select('*').gte('tanggal',today).order('tanggal').limit(5);
   const el = document.getElementById('list-kegiatan');
   if (!data||!data.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Belum ada kegiatan</div>'; return; }
-  el.innerHTML = data.map(k=>{
-    const tgl=new Date(k.tanggal);
-    const bln=tgl.toLocaleDateString('id-ID',{month:'short'}).toUpperCase();
-    const day=tgl.getDate();
-    return `<div class="kegiatan-item">
-      <div class="kegiatan-date-box">
-        <div class="kegiatan-date-month">${bln}</div>
-        <div class="kegiatan-date-day">${day}</div>
+  el.innerHTML = data.map(k=>`
+    <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #F0F0F0;align-items:center;">
+      <div style="background:var(--primary-light);color:var(--primary);padding:8px 10px;border-radius:10px;text-align:center;min-width:48px;">
+        <div style="font-size:16px;font-weight:800;">${new Date(k.tanggal).getDate()}</div>
+        <div style="font-size:10px;">${new Date(k.tanggal).toLocaleDateString('id-ID',{month:'short'})}</div>
       </div>
-      <div class="kegiatan-info">
-        <div class="kegiatan-judul">${k.nama}</div>
-        <div class="kegiatan-meta">${k.waktu?'Sabtu, '+fmtDate(k.tanggal)+' · '+k.waktu+' WIB':fmtDate(k.tanggal)} ${k.lokasi?'· '+k.lokasi:''}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;">${k.nama}</div>
+        <div style="font-size:12px;color:#777;">${k.waktu||''} ${k.lokasi?'· '+k.lokasi:''}</div>
       </div>
-      ${currentUser==='admin'?`<button onclick="deleteKegiatan('${k.id}')" style="background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:18px;">🗑️</button>`:`<span class="kegiatan-arrow">›</span>`}
-    </div>`;
-  }).join('');
+      ${currentUser==='admin'?`<button onclick="deleteKegiatan('${k.id}')" style="background:none;border:none;color:#E53935;cursor:pointer;">🗑️</button>`:''}
+    </div>`).join('');
 }
 function showModalKegiatan() {
   document.getElementById('form-kegiatan').reset(); document.getElementById('kg-id').value=''; openModal('modal-kegiatan');
@@ -1800,33 +2549,19 @@ function resetFilterKas() {
 }
 function renderKas(data) {
   const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-kas');
-  if (!data||!data.length) {
-    tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div style="font-size:40px;margin-bottom:8px;">💸</div><p>Belum ada transaksi</p></div></td></tr>';
-    return;
-  }
-  tbody.innerHTML=data.map(k=>{
-    const isMasuk = k.jenis==='masuk';
-    const icon = isMasuk ? '📥' : '📤';
-    const nominalStr = (isMasuk?'+':'-')+rp(k.nominal);
-    return `<tr>
-      <td colspan="6" style="padding:0;border:none;">
-        <div class="kas-item">
-          <div class="kas-item-icon ${k.jenis}">${icon}</div>
-          <div class="kas-item-info">
-            <div class="kas-item-ket">${k.keterangan}</div>
-            <div class="kas-item-meta">${fmtDate(k.tanggal)} · ${k.kategori||''} ${k.blok_warga?'· <span style="color:#1565C0;font-weight:600;">'+k.blok_warga+'</span>':''}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <div class="kas-item-nominal ${k.jenis}">${nominalStr}</div>
-            ${isAdmin?`<div style="display:flex;gap:4px;">
-              <button style="background:none;border:none;color:#94A3B8;cursor:pointer;font-size:13px;" onclick="showModalEditKas('${k.id}')">✏️</button>
-              <button style="background:none;border:none;color:#94A3B8;cursor:pointer;font-size:13px;" onclick="deleteKas('${k.id}')">🗑️</button>
-            </div>`:''}
-          </div>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi</div></td></tr>'; return; }
+  tbody.innerHTML=data.map(k=>`
+    <tr>
+      <td style="font-size:12px;white-space:nowrap;">${fmtDate(k.tanggal)}</td>
+      <td>${k.keterangan}<br><span style="font-size:11px;color:#aaa;">${k.kategori}</span></td>
+      <td style="font-size:12px;color:#1565C0;font-weight:600;white-space:nowrap;">${k.blok_warga||'-'}</td>
+      <td><span class="badge ${k.jenis==='masuk'?'badge-success':'badge-danger'}">${k.jenis}</span></td>
+      <td style="white-space:nowrap;font-weight:600;color:${k.jenis==='masuk'?'#2E7D32':'#C62828'}">${rp(k.nominal)}</td>
+      ${isAdmin?`<td onclick="event.stopPropagation()"><div class="flex-row">
+        <button class="btn btn-warning btn-sm" onclick="showModalEditKas('${k.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteKas('${k.id}')">🗑️</button>
+      </div></td>`:''}
+    </tr>`).join('');
 }
 function showModalKas() {
   editKasId=null; document.getElementById('modal-kas-title').textContent='Tambah Transaksi';
@@ -2776,7 +3511,7 @@ async function bersihkanDoubleKas() {
 <div class="overlay" id="modal-ganti-password">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">🔑 Ganti Password</span>
+      <span class="modal-title">Ganti Password</span>
       <button class="modal-close" onclick="closeModal('modal-ganti-password')">✕</button>
     </div>
     <div id="ganti-pass-content"></div>
@@ -2787,7 +3522,7 @@ async function bersihkanDoubleKas() {
 <div class="overlay" id="modal-bukti">
   <div class="modal" style="max-width:420px;">
     <div class="modal-header">
-      <span class="modal-title">🧾 Bukti Pembayaran</span>
+      <span class="modal-title">Bukti Pembayaran</span>
       <button class="modal-close" onclick="closeModal('modal-bukti')">✕</button>
     </div>
     <div id="bukti-content"></div>
@@ -2802,7 +3537,7 @@ async function bersihkanDoubleKas() {
 <div class="overlay" id="modal-anggota">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="modal-anggota-judul">👨‍👩‍👧‍👦 Anggota Keluarga</span>
+      <span class="modal-title" id="modal-anggota-judul">Anggota Keluarga</span>
       <button class="modal-close" onclick="closeModal('modal-anggota')">✕</button>
     </div>
     <div id="modal-anggota-content"></div>
@@ -2845,7 +3580,7 @@ async function bersihkanDoubleKas() {
 <div class="overlay" id="modal-device">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">📱 Device Login Admin</span>
+      <span class="modal-title">Device Login Admin</span>
       <button class="modal-close" onclick="closeModal('modal-device')">✕</button>
     </div>
     <div id="modal-device-content"><div class="loading">Memuat...</div></div>
