@@ -934,16 +934,12 @@ select {
 tbody td .btn { padding: 6px 10px; font-size: 12px; }
 
 /* Loading spinner */
-.loading::before {
-  content: '';
-  display: inline-block;
-  width: 16px; height: 16px;
-  border: 2px solid var(--border);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-right: 8px;
-  vertical-align: middle;
+/* .loading class dibiarkan tanpa spinner — gunakan skeleton HTML sebagai gantinya */
+.loading {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 24px;
+  text-align: center;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -978,6 +974,50 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
   tbody td { font-size: 12px; padding: 9px 7px; }
   thead th { font-size: 10px; padding: 8px 7px; }
 }
+
+
+/* ============================================================
+   SKELETON LOADING
+   ============================================================ */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #F0F2F5 25%, #E4E7EB 50%, #F0F2F5 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 6px;
+}
+.skeleton-text { height: 14px; margin-bottom: 8px; border-radius: 4px; }
+.skeleton-text.wide { width: 80%; }
+.skeleton-text.mid  { width: 55%; }
+.skeleton-text.short{ width: 35%; }
+.skeleton-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(229,231,235,0.7);
+}
+.skeleton-item {
+  display: flex; gap: 12px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid #F3F4F6;
+}
+.skeleton-avatar {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+}
+.skeleton-line { height: 12px; border-radius: 4px; }
+
+/* Summary card values animate in */
+.dash-value { transition: all 0.3s ease; }
+
+/* Fade-in animation for loaded content */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.3s ease forwards; }
 
   </style>
 </head>
@@ -1107,14 +1147,28 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
           <span class="card-title">Pengumuman Terbaru</span>
           <button class="btn btn-primary btn-sm" id="btn-add-pengumuman" style="display:none" onclick="showModalPengumuman()">+ Tambah</button>
         </div>
-        <div id="list-pengumuman"><div class="loading">Memuat...</div></div>
+        <div id="list-pengumuman">
+          <div class="skeleton-item">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-line wide" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line short"></div></div>
+          </div>
+          <div class="skeleton-item">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-line mid" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line short"></div></div>
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">Kegiatan Mendatang</span>
           <button class="btn btn-primary btn-sm" id="btn-add-kegiatan" style="display:none" onclick="showModalKegiatan()">+ Tambah</button>
         </div>
-        <div id="list-kegiatan"><div class="loading">Memuat...</div></div>
+        <div id="list-kegiatan">
+          <div class="skeleton-item">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-line wide" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line mid"></div></div>
+          </div>
+        </div>
       </div>
       <!-- STRUKTUR RT -->
       <div class="card" id="card-struktur">
@@ -1123,7 +1177,14 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
           <button class="btn btn-primary btn-sm" id="btn-edit-struktur" onclick="showModalStruktur()" style="display:none">✏️ Edit</button>
         </div>
         <div id="struktur-content">
-          <div class="loading">Memuat...</div>
+          <div class="skeleton-item">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-line mid" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line wide"></div></div>
+          </div>
+          <div class="skeleton-item" style="border-bottom:none;">
+            <div class="skeleton skeleton-avatar"></div>
+            <div style="flex:1;"><div class="skeleton skeleton-line short" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line mid"></div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1154,7 +1215,7 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
                 <th>Status</th><th>Anggota</th><th>No. HP</th><th>Aksi</th>
               </tr>
             </thead>
-            <tbody id="tabel-warga"><tr><td colspan="6" class="loading">Memuat...</td></tr></tbody>
+            <tbody id="tabel-warga"><tr><td colspan="6"><div style="padding:24px;text-align:center;"><div class="skeleton skeleton-line mid" style="margin:0 auto 8px;"></div><div class="skeleton skeleton-line short" style="margin:0 auto;"></div></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1195,7 +1256,7 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         <div class="table-wrap">
           <table>
             <thead><tr><th>Alamat</th><th>Nama KK</th><th>Status</th><th id="th-iuran-tgl">Tgl Bayar</th><th id="th-iuran-aksi">Aksi</th><th id="th-iuran-bukti">Bukti</th></tr></thead>
-            <tbody id="tabel-iuran"><tr><td colspan="5" class="loading">Memuat...</td></tr></tbody>
+            <tbody id="tabel-iuran"><tr><td colspan="5"><div style="padding:24px;text-align:center;"><div class="skeleton skeleton-line mid" style="margin:0 auto 8px;"></div><div class="skeleton skeleton-line short" style="margin:0 auto;"></div></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1288,7 +1349,7 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
                 <th id="th-kas-aksi" style="display:none">Aksi</th>
               </tr>
             </thead>
-            <tbody id="tabel-kas"><tr><td colspan="6" class="loading">Memuat...</td></tr></tbody>
+            <tbody id="tabel-kas"><tr><td colspan="6"><div style="padding:24px;text-align:center;"><div class="skeleton skeleton-line mid" style="margin:0 auto 8px;"></div><div class="skeleton skeleton-line short" style="margin:0 auto;"></div></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1784,22 +1845,17 @@ async function startApp() {
   const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
   document.getElementById('current-page-title').textContent = titles[lastPage] || lastPage;
 
-  // FIX Bug 2: load halaman aktif dulu (await), lalu data lain paralel di background
-  // Mencegah race condition — halaman aktif pasti selesai sebelum render
-  if (lastPage === 'dashboard')     await loadDashboard();
-  else if (lastPage === 'warga')    await loadWarga();
-  else if (lastPage === 'iuran')    await loadIuran();
-  else if (lastPage === 'kas')      await loadKas();
-  else if (lastPage === 'profil')   await loadProfil();
-
-  // Setelah halaman aktif selesai, load data lainnya paralel di background (tidak blocking UI)
-  const bgLoads = [];
-  if (lastPage !== 'dashboard') bgLoads.push(loadDashboard());
-  if (lastPage !== 'warga')     bgLoads.push(loadWarga());
-  if (lastPage !== 'kas')       bgLoads.push(loadKas());
-  if (lastPage !== 'profil')    bgLoads.push(loadProfil());
-  // iuran tidak perlu diload di background karena filter bulan/tahun belum tentu tepat
-  Promise.all(bgLoads).catch(() => {});
+  // OPTIMASI: Tampilkan UI segera, semua data load paralel di background
+  // Tidak ada await yang blokir — skeleton sudah tampil di HTML
+  const allLoads = [loadDashboard()];
+  if (lastPage === 'warga')  allLoads.push(loadWarga());
+  if (lastPage === 'iuran')  allLoads.push(loadIuran());
+  if (lastPage === 'kas')    allLoads.push(loadKas());
+  if (lastPage === 'profil') allLoads.push(loadProfil());
+  // Background loads: halaman lain yang belum aktif
+  if (lastPage !== 'warga')  allLoads.push(loadWarga());
+  if (lastPage !== 'kas')    allLoads.push(loadKas());
+  Promise.all(allLoads).catch(() => {});
 
   // FIX Bug 2: reload data aktif saat tab/app kembali visible (mencegah freeze)
   if (!window._rtVisibilityBound) {
@@ -1822,11 +1878,20 @@ async function startApp() {
 // ============================================================
 async function loadDashboard() {
   const now = new Date(), bln = now.getMonth()+1, thn = now.getFullYear();
+
+  // Tampilkan struktur dari cache localStorage DULU (instant, tanpa tunggu network)
+  const lokalStruktur = localStorage.getItem(STRUKTUR_KEY);
+  if (lokalStruktur) {
+    try { renderStruktur({ ketua:'',sekretaris1:'',sekretaris2:'',bendahara1:'',bendahara2:'', ...JSON.parse(lokalStruktur) }); } catch(e) {}
+  }
+
+  // Semua query + render jalan PARALEL — tidak ada waterfall
   const [resW, resI, resK] = await Promise.all([
     db.from('warga').select('id', { count:'exact' }),
-    db.from('iuran').select('*').eq('bulan', bln).eq('tahun', thn),
-    db.from('kas').select('nominal, jenis')
+    db.from('iuran').select('status').eq('bulan', bln).eq('tahun', thn),  // hanya kolom status, lebih ringan
+    db.from('kas').select('nominal,jenis')
   ]);
+
   const totalWarga = resW.count || 0;
   document.getElementById('stat-warga').textContent = totalWarga;
   const lunas = (resI.data||[]).filter(i => i.status==='lunas').length;
@@ -1836,11 +1901,17 @@ async function loadDashboard() {
   const masuk    = kasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
   const keluar   = kasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
   document.getElementById('stat-saldo').textContent = rp(masuk - keluar);
+
   // Update summary card on dashboard
-  const dW = document.getElementById('dash-warga'); if(dW) dW.textContent = totalWarga;
-  const dL = document.getElementById('dash-lunas'); if(dL) dL.textContent = lunas;
-  const dS = document.getElementById('dash-saldo'); if(dS) dS.textContent = rp(masuk - keluar);
-  loadPengumuman(); loadKegiatan(); loadStruktur();
+  const dW = document.getElementById('dash-warga');
+  const dL = document.getElementById('dash-lunas');
+  const dS = document.getElementById('dash-saldo');
+  if(dW) { dW.textContent = totalWarga; dW.classList.add('fade-in'); }
+  if(dL) { dL.textContent = lunas;      dL.classList.add('fade-in'); }
+  if(dS) { dS.textContent = rp(masuk - keluar); dS.classList.add('fade-in'); }
+
+  // Paralel: pengumuman, kegiatan, struktur (struktur refresh dari Supabase di background)
+  Promise.all([loadPengumuman(), loadKegiatan(), loadStruktur()]).catch(()=>{});
 }
 
 // ============================================================
@@ -1852,21 +1923,25 @@ async function loadStruktur() {
   const btnEdit = document.getElementById('btn-edit-struktur');
   if (btnEdit) btnEdit.style.display = currentUser === 'admin' ? 'block' : 'none';
   let s = { ketua:'', sekretaris1:'', sekretaris2:'', bendahara1:'', bendahara2:'' };
-  // Coba dari Supabase dulu, fallback ke localStorage jika tabel belum ada
+
+  // LOCAL-FIRST: render dari localStorage SEGERA (instant), lalu update dari Supabase
+  const lokalCache = localStorage.getItem(STRUKTUR_KEY);
+  if (lokalCache) {
+    try { s = { ...s, ...JSON.parse(lokalCache) }; renderStruktur(s); } catch(e) {}
+  }
+
+  // Sinkron dari Supabase di background — update jika berbeda
   try {
     const { data, error } = await db.from('pengaturan').select('nilai').eq('kunci', STRUKTUR_KEY).maybeSingle();
     if (!error && data && data.nilai) {
-      s = { ...s, ...JSON.parse(data.nilai) };
-    } else {
-      // Fallback localStorage
-      const lokal = localStorage.getItem(STRUKTUR_KEY);
-      if (lokal) s = { ...s, ...JSON.parse(lokal) };
+      const fresh = { ...s, ...JSON.parse(data.nilai) };
+      // Simpan ke localStorage agar kunjungan berikutnya instant
+      localStorage.setItem(STRUKTUR_KEY, data.nilai);
+      renderStruktur(fresh);
     }
   } catch(e) {
-    const lokal = localStorage.getItem(STRUKTUR_KEY);
-    if (lokal) try { s = { ...s, ...JSON.parse(lokal) }; } catch(e2) {}
+    // Sudah render dari localStorage di atas, tidak perlu action
   }
-  renderStruktur(s);
 }
 
 function renderStruktur(s) {
@@ -2001,7 +2076,7 @@ async function saveStruktur(e) {
 // PENGUMUMAN & KEGIATAN
 // ============================================================
 async function loadPengumuman() {
-  const { data } = await db.from('pengumuman').select('*').eq('aktif',true).order('created_at',{ascending:false}).limit(5);
+  const { data } = await db.from('pengumuman').select('id,judul,isi,prioritas,created_at').eq('aktif',true).order('created_at',{ascending:false}).limit(5);
   const el = document.getElementById('list-pengumuman');
   if (!data||!data.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Belum ada pengumuman</div>'; return; }
   const priColor = { normal:'badge-info', penting:'badge-warning', urgent:'badge-danger' };
