@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RT 03 APP - Manajemen Warga</title>
+  
+  <!-- External Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- PWA & Favicon -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" type="image/png" href="icon-192.png">
@@ -15,1011 +19,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="RT 03 App">
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-/* ============================================================
-   CSS VARIABLES & RESET
-   ============================================================ */
-:root {
-  --primary: #1A56DB;
-  --primary-dark: #1345B5;
-  --primary-light: #EBF0FF;
-  --primary-mid: #2563EB;
-  --green: #0E9F6E;
-  --green-light: #E8F8F3;
-  --red: #E02424;
-  --red-light: #FEF2F2;
-  --orange: #FF8A00;
-  --orange-light: #FFF4E5;
-  --yellow: #FBBF24;
-  --text-primary: #111928;
-  --text-secondary: #4B5563;
-  --text-muted: #9CA3AF;
-  --border: #E5E7EB;
-  --surface: #F9FAFB;
-  --white: #FFFFFF;
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow: 0 2px 8px rgba(0,0,0,0.10);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
-  --nav-height: 64px;
-  --top-bar-height: 60px;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 14px;
-  color: var(--text-primary);
-  background: var(--surface);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ============================================================
-   TOAST
-   ============================================================ */
-#toast-container {
-  position: fixed;
-  top: 72px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 280px;
-  max-width: 90vw;
-  pointer-events: none;
-}
-.toast {
-  padding: 12px 18px;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--white);
-  box-shadow: var(--shadow-md);
-  animation: slideDown 0.3s ease;
-  pointer-events: all;
-}
-.toast-success { background: var(--green); }
-.toast-error   { background: var(--red); }
-.toast-info    { background: var(--primary); }
-@keyframes slideDown {
-  from { opacity:0; transform:translateY(-12px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-
-/* ============================================================
-   LOGIN SCREEN
-   ============================================================ */
-#login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(160deg, #1A56DB 0%, #0E3A8C 60%, #060E2D 100%);
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-}
-#login-screen::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 70% 20%, rgba(99,163,255,0.18) 0%, transparent 60%);
-  pointer-events: none;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 380px;
-  background: var(--white);
-  border-radius: 24px;
-  padding: 32px 28px 28px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.25);
-  position: relative;
-}
-
-.login-logo {
-  text-align: center;
-  margin-bottom: 28px;
-}
-.logo-img {
-  width: 88px;
-  height: 88px;
-  object-fit: contain;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 4px 12px rgba(26,86,219,0.18));
-}
-.login-logo h2 {
-  font-family: 'Poppins', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.3px;
-  margin-bottom: 4px;
-}
-.login-logo p {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.login-tabs {
-  display: flex;
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 4px;
-  margin-bottom: 24px;
-  gap: 4px;
-}
-.login-tab {
-  flex: 1;
-  padding: 10px 8px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'Inter', sans-serif;
-}
-.login-tab.active {
-  background: var(--white);
-  color: var(--primary);
-  box-shadow: var(--shadow-sm);
-}
-
-/* ============================================================
-   FORM ELEMENTS
-   ============================================================ */
-.form-group {
-  margin-bottom: 16px;
-}
-.form-group label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-}
-input[type="text"],
-input[type="password"],
-input[type="number"],
-input[type="date"],
-input[type="time"],
-input[type="email"],
-select,
-textarea {
-  width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  color: var(--text-primary);
-  background: var(--white);
-  transition: border-color 0.2s, box-shadow 0.2s;
-  font-family: 'Inter', sans-serif;
-  outline: none;
-  -webkit-appearance: none;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(26,86,219,0.10);
-}
-input::placeholder, textarea::placeholder { color: var(--text-muted); }
-
-/* ============================================================
-   BUTTONS
-   ============================================================ */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 11px 20px;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s;
-  font-family: 'Inter', sans-serif;
-  white-space: nowrap;
-  text-decoration: none;
-}
-.btn-primary {
-  background: var(--primary);
-  color: var(--white);
-}
-.btn-primary:hover { background: var(--primary-dark); }
-.btn-outline {
-  background: var(--white);
-  color: var(--text-secondary);
-  border: 1.5px solid var(--border);
-}
-.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-.btn-danger {
-  background: var(--red);
-  color: var(--white);
-}
-.btn-warning {
-  background: var(--orange-light);
-  color: var(--orange);
-  border: 1px solid #FFD9A0;
-}
-.btn-success {
-  background: var(--green);
-  color: var(--white);
-}
-.btn-sm {
-  padding: 7px 14px;
-  font-size: 12px;
-  border-radius: 7px;
-}
-.btn:active { opacity: 0.85; transform: scale(0.98); }
-
-/* ============================================================
-   TOP BAR
-   ============================================================ */
-#app {
-  display: none;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.top-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  height: var(--top-bar-height);
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  box-shadow: var(--shadow-sm);
-}
-.top-bar-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.top-bar-logo-img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  border-radius: 8px;
-}
-.top-bar-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-.top-bar-subtitle {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-.top-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.user-badge {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-.logout-btn {
-  background: none;
-  border: 1.5px solid var(--border);
-  color: var(--text-secondary);
-  padding: 5px 12px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s;
-}
-.logout-btn:hover { border-color: var(--red); color: var(--red); }
-
-/* ============================================================
-   MAIN CONTENT
-   ============================================================ */
-.main-content {
-  margin-top: var(--top-bar-height);
-  margin-bottom: var(--nav-height);
-  padding: 16px 14px;
-  flex: 1;
-}
-
-.page { display: none; }
-.page.active { display: block; }
-
-/* ============================================================
-   BOTTOM NAV
-   ============================================================ */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--nav-height);
-  background: var(--white);
-  border-top: 1px solid var(--border);
-  display: flex;
-  z-index: 100;
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
-}
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  padding: 6px 4px;
-  transition: color 0.2s;
-  font-family: 'Inter', sans-serif;
-  letter-spacing: 0.2px;
-}
-.nav-item.active {
-  color: var(--primary);
-}
-.nav-icon {
-  font-size: 20px;
-  line-height: 1;
-  display: block;
-  filter: grayscale(0.3);
-}
-.nav-item.active .nav-icon {
-  filter: none;
-}
-
-/* ============================================================
-   DASHBOARD: SUMMARY CARD (Blue Card)
-   ============================================================ */
-.dashboard-summary {
-  background: linear-gradient(135deg, var(--primary-mid) 0%, var(--primary-dark) 100%);
-  border-radius: var(--radius-lg);
-  padding: 20px 18px;
-  color: var(--white);
-  margin-bottom: 16px;
-  position: relative;
-  overflow: hidden;
-}
-.dashboard-summary::before {
-  content: '';
-  position: absolute;
-  top: -30px; right: -30px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-}
-.dashboard-summary::after {
-  content: '';
-  position: absolute;
-  bottom: -20px; right: 40px;
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
-}
-.summary-title {
-  font-size: 13px;
-  font-weight: 600;
-  opacity: 0.85;
-  margin-bottom: 14px;
-  letter-spacing: 0.3px;
-}
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  position: relative;
-  z-index: 1;
-}
-.summary-stat {
-  text-align: center;
-}
-.summary-stat-value {
-  font-family: 'Poppins', sans-serif;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 4px;
-}
-.summary-stat-label {
-  font-size: 10px;
-  font-weight: 500;
-  opacity: 0.78;
-  letter-spacing: 0.2px;
-  line-height: 1.3;
-}
-
-/* ============================================================
-   QUICK MENU
-   ============================================================ */
-.quick-menu {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.quick-menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  cursor: pointer;
-  user-select: none;
-}
-.quick-menu-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  box-shadow: var(--shadow-sm);
-}
-.quick-menu-icon.blue   { background: var(--primary-light); }
-.quick-menu-icon.orange { background: var(--orange-light); }
-.quick-menu-icon.green  { background: var(--green-light); }
-.quick-menu-icon.purple { background: #F5F0FF; }
-.quick-menu-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-/* ============================================================
-   CARDS
-   ============================================================ */
-.card {
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(229,231,235,0.7);
-}
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.card-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.lihat-semua {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
-  font-family: 'Inter', sans-serif;
-}
-
-/* ============================================================
-   STAT CARDS (Kas)
-   ============================================================ */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.stat-card {
-  background: var(--white);
-  border-radius: var(--radius);
-  padding: 14px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  text-align: center;
-}
-.stat-card.green {
-  background: var(--green-light);
-  border-color: #A7F3D0;
-}
-.stat-card.red {
-  background: var(--red-light);
-  border-color: #FECACA;
-}
-.stat-card.blue {
-  background: var(--primary-light);
-  border-color: #BFDBFE;
-}
-.stat-value {
-  font-family: 'Poppins', sans-serif;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-  word-break: break-all;
-}
-.stat-card.green .stat-value { color: var(--green); }
-.stat-card.red   .stat-value { color: var(--red); }
-.stat-card.blue  .stat-value { color: var(--primary); }
-.stat-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-/* Saldo full width */
-#page-kas .stat-grid {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-/* ============================================================
-   SEARCH BAR
-   ============================================================ */
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0 12px;
-  margin-bottom: 12px;
-  transition: border-color 0.2s;
-}
-.search-bar:focus-within {
-  border-color: var(--primary);
-  background: var(--white);
-}
-.search-icon { font-size: 16px; margin-right: 8px; opacity: 0.5; }
-.search-bar input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 10px 0;
-  font-size: 14px;
-  outline: none;
-  box-shadow: none;
-}
-.search-bar input:focus { box-shadow: none; }
-
-/* ============================================================
-   FILTER CHIPS
-   ============================================================ */
-.filter-row {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  margin-bottom: 12px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.filter-row::-webkit-scrollbar { display: none; }
-.filter-chip {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1.5px solid var(--border);
-  background: var(--white);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  font-family: 'Inter', sans-serif;
-}
-.filter-chip.active, .filter-chip:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--white);
-}
-
-/* ============================================================
-   TABLE
-   ============================================================ */
-.table-wrap {
-  overflow-x: auto;
-  border-radius: var(--radius-sm);
-  -webkit-overflow-scrolling: touch;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-thead th {
-  background: var(--surface);
-  padding: 10px 10px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-tbody tr {
-  border-bottom: 1px solid #F3F4F6;
-  transition: background 0.15s;
-}
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: #F9FAFB; }
-tbody td {
-  padding: 11px 10px;
-  vertical-align: middle;
-  color: var(--text-primary);
-  font-size: 13px;
-}
-.click-name {
-  cursor: pointer;
-  color: var(--primary);
-  font-weight: 600;
-  text-decoration: none;
-}
-.click-name:hover { text-decoration: underline; }
-
-/* ============================================================
-   BADGES
-   ============================================================ */
-.badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
-}
-.badge-success { background: var(--green-light); color: var(--green); }
-.badge-danger  { background: var(--red-light);   color: var(--red); }
-.badge-warning { background: var(--orange-light); color: var(--orange); }
-.badge-info    { background: var(--primary-light); color: var(--primary); }
-
-/* ============================================================
-   IURAN SUMMARY CARDS
-   ============================================================ */
-#iuran-summary {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-#iuran-summary > div {
-  flex: 1;
-  border-radius: var(--radius);
-  padding: 12px 10px;
-  text-align: center;
-}
-
-/* ============================================================
-   KAS FILTER ROWS
-   ============================================================ */
-.kas-filter-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 0;
-}
-
-/* ============================================================
-   PENGUMUMAN & KEGIATAN LIST
-   ============================================================ */
-.announcement-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #F3F4F6;
-}
-.announcement-item:last-child { border-bottom: none; }
-
-.event-item {
-  display: flex;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #F3F4F6;
-  align-items: center;
-}
-.event-item:last-child { border-bottom: none; }
-.event-date-box {
-  background: var(--primary-light);
-  color: var(--primary);
-  padding: 8px 10px;
-  border-radius: 10px;
-  text-align: center;
-  min-width: 48px;
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   MODALS
-   ============================================================ */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(17,25,40,0.55);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  z-index: 200;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0;
-}
-.overlay.show {
-  display: flex;
-  animation: fadeIn 0.2s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.modal {
-  background: var(--white);
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-width: 520px;
-  max-height: 88vh;
-  overflow-y: auto;
-  padding: 20px 20px 32px;
-  animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
-  position: relative;
-}
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity:0; }
-  to   { transform: translateY(0);   opacity:1; }
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-.modal-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--surface);
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: background 0.2s;
-}
-.modal-close:hover { background: var(--border); }
-
-/* Modal pull handle */
-.modal::before {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin: 0 auto 16px;
-}
-
-/* ============================================================
-   EMPTY STATE / LOADING
-   ============================================================ */
-.empty-state {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-}
-.empty-icon {
-  font-size: 36px;
-  margin-bottom: 10px;
-  opacity: 0.6;
-}
-.loading {
-  text-align: center;
-  padding: 24px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-/* ============================================================
-   FLEX ROW
-   ============================================================ */
-.flex-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-/* ============================================================
-   PROFIL PAGE
-   ============================================================ */
-#page-profil .card {
-  margin-bottom: 12px;
-}
-
-/* ============================================================
-   SCROLLBAR
-   ============================================================ */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-/* ============================================================
-   ADDITIONAL POLISH
-   ============================================================ */
-
-/* Login screen illustration */
-#login-screen::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 200px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 200'%3E%3Cpath fill='rgba(255,255,255,0.04)' d='M0,128L48,117.3C96,107,192,85,288,90.7C384,96,480,128,576,128C672,128,768,96,864,85.3C960,75,1056,85,1152,96C1248,107,1344,117,1392,122.7L1440,128L1440,200L0,200Z'/%3E%3C/svg%3E") no-repeat bottom;
-  background-size: cover;
-  pointer-events: none;
-}
-
-/* Generate button special style */
-#btn-generate-iuran {
-  background: linear-gradient(135deg, #FF8A00, #E65100) !important;
-  color: white !important;
-  border: none !important;
-}
-
-/* Warga list row - name link */
-.click-name { font-weight: 600; color: var(--primary); }
-
-/* Badge override consistency */
-.badge { border-radius: 6px; }
-
-/* Card slight hover lift */
-.card { transition: box-shadow 0.2s; }
-.card:hover { box-shadow: var(--shadow); }
-
-/* Select arrow custom */
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 32px !important;
-}
-
-/* Kas filter row spacing */
-.kas-filter-row { margin-bottom: 8px; }
-
-/* Profil page content padding */
-#profil-content { color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
-
-/* Table action buttons */
-tbody td .btn { padding: 6px 10px; font-size: 12px; }
-
-/* Loading spinner */
-/* .loading class dibiarkan tanpa spinner — gunakan skeleton HTML sebagai gantinya */
-.loading {
-  color: var(--text-muted);
-  font-size: 13px;
-  padding: 24px;
-  text-align: center;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Announcement item styling */
-#list-pengumuman > div > div:first-child { margin-bottom: 6px; }
-#list-kegiatan > div { padding: 10px 0; border-bottom: 1px solid #F3F4F6; }
-#list-kegiatan > div:last-child { border-bottom: none; }
-
-/* Modal overlay align center on larger screens */
-@media (min-width: 520px) {
-  .overlay { align-items: center; padding: 20px; }
-  .modal { border-radius: 20px; max-height: 80vh; }
-  .modal::before { display: none; }
-}
-
-/* Quick menu item hover */
-.quick-menu-item:hover .quick-menu-icon { transform: translateY(-2px); transition: transform 0.2s; }
-
-/* Dashboard summary card bell notification */
-.summary-notif {
-  position: absolute;
-  top: 16px; right: 16px;
-  width: 32px; height: 32px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-}
-
-/* Responsive table font size */
-@media (max-width: 380px) {
-  tbody td { font-size: 12px; padding: 9px 7px; }
-  thead th { font-size: 10px; padding: 8px 7px; }
-}
-
-
-/* ============================================================
-   SKELETON LOADING
-   ============================================================ */
-@keyframes shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
-}
-.skeleton {
-  background: linear-gradient(90deg, #F0F2F5 25%, #E4E7EB 50%, #F0F2F5 75%);
-  background-size: 800px 100%;
-  animation: shimmer 1.4s infinite linear;
-  border-radius: 6px;
-}
-.skeleton-text { height: 14px; margin-bottom: 8px; border-radius: 4px; }
-.skeleton-text.wide { width: 80%; }
-.skeleton-text.mid  { width: 55%; }
-.skeleton-text.short{ width: 35%; }
-.skeleton-card {
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(229,231,235,0.7);
-}
-.skeleton-item {
-  display: flex; gap: 12px; align-items: center;
-  padding: 10px 0; border-bottom: 1px solid #F3F4F6;
-}
-.skeleton-avatar {
-  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-}
-.skeleton-line { height: 12px; border-radius: 4px; }
-
-/* Summary card values animate in */
-.dash-value { transition: all 0.3s ease; }
-
-/* Fade-in animation for loaded content */
-@keyframes fadeInUp {
-  from { opacity:0; transform:translateY(6px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-.fade-in { animation: fadeInUp 0.3s ease forwards; }
-
-  </style>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -1031,24 +38,24 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <img class="logo-img" src="logo.png" alt="Logo RT 03 RW 12">
+      <img class="logo-img" src="assets/logo.png" alt="Logo RT 03 RW 12">
       <h2>RT 03 / RW 12</h2>
       <p>Villa Bintaro Asri</p>
     </div>
     <p style="text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:20px;line-height:1.5;">Masuk untuk mengelola informasi<br>dan keuangan RT 03 / RW 12</p>
     <div class="login-tabs">
-      <button class="login-tab active" onclick="switchLoginTab('admin')">&#x1F510; Admin</button>
-      <button class="login-tab" onclick="switchLoginTab('warga')">&#x1F464; Warga</button>
+      <button class="login-tab active" id="tab-admin-btn">&#x1F510; Admin</button>
+      <button class="login-tab" id="tab-warga-btn">&#x1F464; Warga</button>
     </div>
     <div id="login-form-admin">
       <div class="form-group">
         <label>Kode Admin</label>
         <div style="position:relative;">
           <input type="password" id="admin-pass" placeholder="Masukkan kode admin" maxlength="20" style="width:100%;padding-right:44px;">
-          <button type="button" onclick="togglePass('admin-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+          <button type="button" class="toggle-pass-btn" data-target="admin-pass" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="loginAdmin()">🔐 Masuk sebagai Admin</button>
+      <button class="btn btn-primary" id="login-admin-btn" style="width:100%;padding:13px;">🔐 Masuk sebagai Admin</button>
     </div>
     <div id="login-form-warga" style="display:none">
       <div class="form-group">
@@ -1059,10 +66,10 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         <label>Password</label>
         <div style="position:relative;">
           <input type="password" id="warga-pass" placeholder="Password warga (default: 123)" style="width:100%;padding-right:44px;">
-          <button type="button" onclick="togglePass('warga-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
+          <button type="button" class="toggle-pass-btn" data-target="warga-pass" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
         </div>
       </div>
-      <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="loginWarga()">🏠 Masuk sebagai Warga</button>
+      <button class="btn btn-primary" id="login-warga-btn" style="width:100%;padding:13px;">🏠 Masuk sebagai Warga</button>
     </div>
   </div>
 </div>
@@ -1073,29 +80,27 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
 <div id="app">
   <div class="top-bar">
     <div class="top-bar-left">
-      <img class="top-bar-logo-img" src="logo.png" alt="Logo RT 03">
+      <img class="top-bar-logo-img" src="assets/logo.png" alt="Logo RT 03">
       <div>
         <div class="top-bar-title">RT 03 / RW 12</div>
         <div class="top-bar-subtitle">Villa Bintaro Asri</div>
+        <div id="current-page-title" style="display:none">Dashboard</div>
       </div>
     </div>
     <div class="top-bar-right">
       <span class="user-badge" id="user-badge">Admin</span>
-      <button class="logout-btn" onclick="logout()">Keluar</button>
+      <button class="logout-btn" id="logout-btn">Keluar</button>
     </div>
   </div>
 
   <div class="main-content">
-
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page active">
-      <!-- hidden elements agar loadDashboard tidak error -->
       <span id="stat-warga" style="display:none"></span>
       <span id="stat-saldo" style="display:none"></span>
       <span id="stat-lunas" style="display:none"></span>
       <span id="stat-belum" style="display:none"></span>
 
-      <!-- Blue summary card -->
       <div class="dashboard-summary">
         <div class="summary-title">Ringkasan RT 03 / RW 12</div>
         <div class="summary-stats">
@@ -1114,27 +119,26 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         </div>
       </div>
 
-      <!-- Quick Menu -->
       <div class="quick-menu">
-        <div class="quick-menu-item" onclick="navigateTo('warga', document.querySelectorAll('.nav-item')[1])">
+        <div class="quick-menu-item nav-trigger" data-page="warga">
           <div class="quick-menu-icon blue">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A56DB" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
           </div>
           <span class="quick-menu-label">Warga</span>
         </div>
-        <div class="quick-menu-item" onclick="navigateTo('iuran', document.querySelectorAll('.nav-item')[2])">
+        <div class="quick-menu-item nav-trigger" data-page="iuran">
           <div class="quick-menu-icon orange">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF8A00" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </div>
           <span class="quick-menu-label">Iuran</span>
         </div>
-        <div class="quick-menu-item" onclick="navigateTo('kas', document.querySelectorAll('.nav-item')[3])">
+        <div class="quick-menu-item nav-trigger" data-page="kas">
           <div class="quick-menu-icon green">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <span class="quick-menu-label">Kas RT</span>
         </div>
-        <div class="quick-menu-item" onclick="navigateTo('profil', document.querySelectorAll('.nav-item')[4])">
+        <div class="quick-menu-item nav-trigger" data-page="profil">
           <div class="quick-menu-icon purple">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
           </div>
@@ -1145,46 +149,30 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
       <div class="card">
         <div class="card-header">
           <span class="card-title">Pengumuman Terbaru</span>
-          <button class="btn btn-primary btn-sm" id="btn-add-pengumuman" style="display:none" onclick="showModalPengumuman()">+ Tambah</button>
+          <button class="btn btn-primary btn-sm admin-only" id="btn-add-pengumuman" style="display:none">+ Tambah</button>
         </div>
         <div id="list-pengumuman">
-          <div class="skeleton-item">
-            <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1;"><div class="skeleton skeleton-line wide" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line short"></div></div>
-          </div>
-          <div class="skeleton-item">
-            <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1;"><div class="skeleton skeleton-line mid" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line short"></div></div>
-          </div>
+          <div class="skeleton-item"><div class="skeleton skeleton-avatar"></div><div style="flex:1;"><div class="skeleton skeleton-line wide"></div><div class="skeleton skeleton-line short"></div></div></div>
         </div>
       </div>
+      
       <div class="card">
         <div class="card-header">
           <span class="card-title">Kegiatan Mendatang</span>
-          <button class="btn btn-primary btn-sm" id="btn-add-kegiatan" style="display:none" onclick="showModalKegiatan()">+ Tambah</button>
+          <button class="btn btn-primary btn-sm admin-only" id="btn-add-kegiatan" style="display:none">+ Tambah</button>
         </div>
         <div id="list-kegiatan">
-          <div class="skeleton-item">
-            <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1;"><div class="skeleton skeleton-line wide" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line mid"></div></div>
-          </div>
+          <div class="skeleton-item"><div class="skeleton skeleton-avatar"></div><div style="flex:1;"><div class="skeleton skeleton-line wide"></div><div class="skeleton skeleton-line mid"></div></div></div>
         </div>
       </div>
-      <!-- STRUKTUR RT -->
+
       <div class="card" id="card-struktur">
         <div class="card-header">
           <span class="card-title">Struktur Pengurus RT</span>
-          <button class="btn btn-primary btn-sm" id="btn-edit-struktur" onclick="showModalStruktur()" style="display:none">✏️ Edit</button>
+          <button class="btn btn-primary btn-sm admin-only" id="btn-edit-struktur" style="display:none">✏️ Edit</button>
         </div>
         <div id="struktur-content">
-          <div class="skeleton-item">
-            <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1;"><div class="skeleton skeleton-line mid" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line wide"></div></div>
-          </div>
-          <div class="skeleton-item" style="border-bottom:none;">
-            <div class="skeleton skeleton-avatar"></div>
-            <div style="flex:1;"><div class="skeleton skeleton-line short" style="margin-bottom:8px;"></div><div class="skeleton skeleton-line mid"></div></div>
-          </div>
+          <div class="skeleton-item"><div class="skeleton skeleton-avatar"></div><div style="flex:1;"><div class="skeleton skeleton-line mid"></div><div class="skeleton skeleton-line wide"></div></div></div>
         </div>
       </div>
     </div>
@@ -1195,27 +183,27 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         <div class="card-header">
           <span class="card-title">Daftar Warga</span>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-outline btn-sm" id="btn-sinkron-warga" onclick="sinkronSemuaWarga()" style="display:none;font-size:11px;">🔄 Sinkron</button>
-            <button class="btn btn-primary btn-sm" id="btn-tambah-warga" onclick="showModalTambahWarga()" style="display:none">+ Tambah</button>
+            <button class="btn btn-outline btn-sm admin-only" id="btn-sinkron-warga" style="display:none;font-size:11px;">🔄 Sinkron</button>
+            <button class="btn btn-primary btn-sm admin-only" id="btn-tambah-warga" style="display:none">+ Tambah</button>
           </div>
         </div>
         <div class="search-bar">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Cari nama, blok, NIK..." oninput="filterWarga(this.value)" id="search-warga">
+          <input type="text" placeholder="Cari nama, blok, NIK..." id="search-warga">
         </div>
         <div class="filter-row" id="filter-blok">
-          <button class="filter-chip active" onclick="setFilterBlok('', this)">Semua</button>
+          <button class="filter-chip active" data-blok="">Semua</button>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Alamat</th><th>Nama KK</th>
-                <th id="th-nik" style="display:none">NIK</th>
+                <th class="th-nik admin-only" style="display:none">NIK</th>
                 <th>Status</th><th>Anggota</th><th>No. HP</th><th>Aksi</th>
               </tr>
             </thead>
-            <tbody id="tabel-warga"><tr><td colspan="6"><div style="padding:24px;text-align:center;"><div class="skeleton skeleton-line mid" style="margin:0 auto 8px;"></div><div class="skeleton skeleton-line short" style="margin:0 auto;"></div></div></td></tr></tbody>
+            <tbody id="tabel-warga"></tbody>
           </table>
         </div>
       </div>
@@ -1226,18 +214,18 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
       <div class="card">
         <div class="card-header">
           <span class="card-title">Iuran Warga</span>
-          <button class="btn btn-primary btn-sm" id="btn-generate-iuran" onclick="generateIuranBulanan()" style="display:none;background:var(--primary);color:white;border:none;">⚡ Generate</button>
+          <button class="btn btn-primary btn-sm admin-only" id="btn-generate-iuran" style="display:none;">⚡ Generate</button>
         </div>
         <div class="flex-row" style="margin-bottom:12px;">
           <select id="filter-bulan-iuran" style="flex:1;"></select>
           <select id="filter-tahun-iuran" style="width:100px;"></select>
         </div>
         <div class="filter-row" id="filter-blok-iuran">
-          <button class="filter-chip active" onclick="setFilterBlokIuran('',this)">Semua</button>
+          <button class="filter-chip active" data-blok="">Semua</button>
         </div>
         <div class="search-bar">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="Cari nama warga..." oninput="filterIuran(this.value)" id="search-iuran">
+          <input type="text" placeholder="Cari nama warga..." id="search-iuran">
         </div>
         <div id="iuran-summary" style="display:flex;gap:8px;margin:10px 0 4px 0;">
           <div style="flex:1;background:var(--green-light);border-radius:var(--radius-sm);padding:12px 10px;text-align:center;border:1px solid #A7F3D0;">
@@ -1255,8 +243,8 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Alamat</th><th>Nama KK</th><th>Status</th><th id="th-iuran-tgl">Tgl Bayar</th><th id="th-iuran-aksi">Aksi</th><th id="th-iuran-bukti">Bukti</th></tr></thead>
-            <tbody id="tabel-iuran"><tr><td colspan="5"><div style="padding:24px;text-align:center;"><div class="skeleton skeleton-line mid" style="margin:0 auto 8px;"></div><div class="skeleton skeleton-line short" style="margin:0 auto;"></div></div></td></tr></tbody>
+            <thead><tr><th>Alamat</th><th>Nama KK</th><th>Status</th><th>Tgl Bayar</th><th class="admin-only">Aksi</th><th class="admin-only">Bukti</th></tr></thead>
+            <tbody id="tabel-iuran"></tbody>
           </table>
         </div>
       </div>
@@ -1282,20 +270,20 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         <div class="card-header">
           <span class="card-title">Riwayat Kas</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-            <button class="btn btn-outline btn-sm" id="btn-bersih-kas" onclick="bersihkanDoubleKas()" style="display:none;font-size:11px;color:#E53935;border-color:#E53935;">🧹 Bersihkan</button>
-            <button class="btn btn-outline btn-sm" id="btn-sinkron-kas" onclick="sinkronBlokKas()" style="display:none;font-size:11px;">🔄 Sinkron</button>
-            <button class="btn btn-primary btn-sm" id="btn-tambah-kas" onclick="showModalKas()" style="display:none">+ Tambah</button>
+            <button class="btn btn-outline btn-sm admin-only" id="btn-bersih-kas" style="display:none;font-size:11px;color:#E53935;border-color:#E53935;">🧹 Bersihkan</button>
+            <button class="btn btn-outline btn-sm admin-only" id="btn-sinkron-kas" style="display:none;font-size:11px;">🔄 Sinkron</button>
+            <button class="btn btn-primary btn-sm admin-only" id="btn-tambah-kas" style="display:none">+ Tambah</button>
           </div>
         </div>
         <div class="kas-filter-row">
-          <select id="filter-kas-jenis" onchange="applyFilterKas()" style="flex:1;">
+          <select id="filter-kas-jenis" style="flex:1;">
             <option value="">Semua Transaksi</option>
             <option value="masuk">📥 Kas Masuk</option>
             <option value="keluar">📤 Kas Keluar</option>
           </select>
         </div>
         <div class="kas-filter-row" style="margin-top:8px;">
-          <select id="filter-kas-kategori" onchange="applyFilterKas()" style="flex:1;">
+          <select id="filter-kas-kategori" style="flex:1;">
             <option value="">Semua Kategori</option>
             <option value="iuran">💳 Iuran</option>
             <option value="operasional">⚙️ Operasional</option>
@@ -1305,51 +293,43 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
           </select>
         </div>
         <div class="flex-row" style="margin-top:8px;gap:8px;">
-          <select id="filter-kas-bulan" onchange="applyFilterKas()" style="flex:1;">
+          <select id="filter-kas-bulan" style="flex:1;">
             <option value="">Semua Bulan</option>
-            <option value="01">Januari</option><option value="02">Februari</option>
-            <option value="03">Maret</option><option value="04">April</option>
-            <option value="05">Mei</option><option value="06">Juni</option>
-            <option value="07">Juli</option><option value="08">Agustus</option>
-            <option value="09">September</option><option value="10">Oktober</option>
-            <option value="11">November</option><option value="12">Desember</option>
+            <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option>
+            <option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option>
+            <option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
           </select>
-          <select id="filter-kas-tahun" onchange="applyFilterKas()" style="width:100px;">
+          <select id="filter-kas-tahun" style="width:100px;">
             <option value="">Semua Tahun</option>
           </select>
-          <button class="btn btn-outline btn-sm" onclick="resetFilterKas()" style="white-space:nowrap;padding:10px 12px;">↺ Reset</button>
+          <button class="btn btn-outline btn-sm" id="btn-reset-kas" style="white-space:nowrap;padding:10px 12px;">↺ Reset</button>
         </div>
-        <div class="flex-row" style="margin-bottom:12px;">
-          <button class="btn btn-outline btn-sm" onclick="exportKasPDF()">📄 PDF</button>
-          <button class="btn btn-outline btn-sm" onclick="exportKasExcel()">📊 Excel</button>
+        <div class="flex-row" style="margin:8px 0 12px;">
+          <button class="btn btn-outline btn-sm" id="btn-export-pdf">📄 PDF</button>
+          <button class="btn btn-outline btn-sm" id="btn-export-excel">📊 Excel</button>
         </div>
         <div class="table-wrap">
-          <!-- Ringkasan filter bulan -->
           <div id="kas-filter-summary" style="display:none;margin-bottom:12px;">
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <div style="flex:1;min-width:90px;background:var(--green-light);border:1px solid #A7F3D0;border-radius:var(--radius-sm);padding:10px 12px;text-align:center;">
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:500;">Total Masuk</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Total Masuk</div>
                 <div id="summary-masuk" style="font-size:14px;font-weight:800;color:var(--green);">Rp 0</div>
               </div>
               <div style="flex:1;min-width:90px;background:var(--red-light);border:1px solid #FECACA;border-radius:var(--radius-sm);padding:10px 12px;text-align:center;">
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:500;">Total Keluar</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Total Keluar</div>
                 <div id="summary-keluar" style="font-size:14px;font-weight:800;color:var(--red);">Rp 0</div>
               </div>
               <div style="flex:1;min-width:90px;background:var(--primary-light);border:1px solid #BFDBFE;border-radius:var(--radius-sm);padding:10px 12px;text-align:center;">
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;font-weight:500;">Saldo</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Saldo</div>
                 <div id="summary-saldo" style="font-size:14px;font-weight:800;color:var(--primary);">Rp 0</div>
               </div>
             </div>
           </div>
-
           <table>
             <thead>
-              <tr>
-                <th>Tanggal</th><th>Keterangan</th><th>Blok</th><th>Jenis</th><th>Nominal</th>
-                <th id="th-kas-aksi" style="display:none">Aksi</th>
-              </tr>
+              <tr><th>Tanggal</th><th>Keterangan</th><th>Blok</th><th>Jenis</th><th>Nominal</th><th class="th-kas-aksi admin-only" style="display:none">Aksi</th></tr>
             </thead>
-            <tbody id="tabel-kas"><tr><td colspan="6"><div style="padding:24px;text-align:center;"><div class="skeleton skeleton-line mid" style="margin:0 auto 8px;"></div><div class="skeleton skeleton-line short" style="margin:0 auto;"></div></div></td></tr></tbody>
+            <tbody id="tabel-kas"></tbody>
           </table>
         </div>
       </div>
@@ -1361,2306 +341,166 @@ tbody td .btn { padding: 6px 10px; font-size: 12px; }
         <div class="card-title" style="margin-bottom:16px;">Informasi Akun</div>
         <div id="profil-content"></div>
       </div>
-      <div class="card" id="log-card" style="display:none">
+      <div class="card admin-only" id="log-card" style="display:none">
         <div class="card-header">
           <span class="card-title">Log Aktivitas</span>
-          <button class="btn btn-danger btn-sm" onclick="clearLog()">Hapus Log</button>
+          <button class="btn btn-danger btn-sm" id="btn-clear-log">Hapus Log</button>
         </div>
         <div id="list-log"></div>
       </div>
     </div>
-
-  </div><!-- /main-content -->
+  </div>
 
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="navigateTo('dashboard', this)">
-      <span class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      </span>Dashboard
-    </button>
-    <button class="nav-item" onclick="navigateTo('warga', this)">
-      <span class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>
-      </span>Warga
-    </button>
-    <button class="nav-item" onclick="navigateTo('iuran', this)">
-      <span class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-      </span>Iuran
-    </button>
-    <button class="nav-item" onclick="navigateTo('kas', this)">
-      <span class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg>
-      </span>Kas RT
-    </button>
-    <button class="nav-item" onclick="navigateTo('profil', this)">
-      <span class="nav-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-      </span>Profil
-    </button>
+    <button class="nav-item active nav-trigger" data-page="dashboard"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>Dashboard</button>
+    <button class="nav-item nav-trigger" data-page="warga"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg></span>Warga</button>
+    <button class="nav-item nav-trigger" data-page="iuran"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>Iuran</button>
+    <button class="nav-item nav-trigger" data-page="kas"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4l3 3"/></svg></span>Kas RT</button>
+    <button class="nav-item nav-trigger" data-page="profil"><span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>Profil</button>
   </nav>
 </div>
 
-<!-- ============================================================
-     MODALS
-     ============================================================ -->
+<!-- MODALS -->
 <div class="overlay" id="modal-riwayat">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-riwayat-nama">Riwayat Pembayaran</span>
-      <button class="modal-close" onclick="closeModal('modal-riwayat')">✕</button>
-    </div>
-    <div id="modal-riwayat-content"><div class="loading">Memuat...</div></div>
+    <div class="modal-header"><span class="modal-title" id="modal-riwayat-nama">Riwayat Pembayaran</span><button class="modal-close" data-close="modal-riwayat">✕</button></div>
+    <div id="modal-riwayat-content"></div>
   </div>
 </div>
 
 <div class="overlay" id="modal-warga">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-warga-title">Tambah Warga</span>
-      <button class="modal-close" onclick="closeModal('modal-warga')">✕</button>
-    </div>
-    <form id="form-warga" onsubmit="saveWarga(event)">
-      <div class="form-group"><label>NIK *</label><input type="text" id="w-nik" placeholder="16 digit NIK" maxlength="16" required></div>
-      <div class="form-group"><label>Nama Kepala Keluarga *</label><input type="text" id="w-nama" placeholder="Nama lengkap KK" required></div>
-      <div class="form-group"><label>Blok *</label><input type="text" id="w-blok" placeholder="A / B / C..." required style="text-transform:uppercase"></div>
-      <div class="form-group"><label>Nomor Rumah *</label><input type="text" id="w-nomor" placeholder="01, 02, dst" required></div>
-      <div class="form-group"><label>Status Hunian</label>
-        <select id="w-status"><option value="pribadi">Pribadi</option><option value="kontrak">Kontrak</option></select>
-      </div>
-      <div class="form-group">
-        <label>Jumlah Anggota Keluarga</label>
-        <input type="number" id="w-anggota" min="1" max="20" value="1" oninput="generateKolomAnggota(this.value)">
-      </div>
+    <div class="modal-header"><span class="modal-title" id="modal-warga-title">Tambah Warga</span><button class="modal-close" data-close="modal-warga">✕</button></div>
+    <form id="form-warga">
+      <div class="form-group"><label>NIK *</label><input type="text" id="w-nik" maxlength="16" required></div>
+      <div class="form-group"><label>Nama Kepala Keluarga *</label><input type="text" id="w-nama" required></div>
+      <div class="form-group"><label>Blok *</label><input type="text" id="w-blok" required style="text-transform:uppercase"></div>
+      <div class="form-group"><label>Nomor Rumah *</label><input type="text" id="w-nomor" required></div>
+      <div class="form-group"><label>Status Hunian</label><select id="w-status"><option value="pribadi">Pribadi</option><option value="kontrak">Kontrak</option></select></div>
+      <div class="form-group"><label>Jumlah Anggota Keluarga</label><input type="number" id="w-anggota" min="1" max="20" value="1"></div>
       <div id="w-anggota-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
       <div class="form-group"><label>No. HP</label><input type="text" id="w-hp" placeholder="08xxxxxxxxxx"></div>
       <input type="hidden" id="w-id">
-      <div class="flex-row">
-        <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-warga')">Batal</button>
-      </div>
+      <div class="flex-row"><button type="submit" class="btn btn-primary">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-warga">Batal</button></div>
     </form>
   </div>
 </div>
 
 <div class="overlay" id="modal-iuran">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Update Status Iuran</span>
-      <button class="modal-close" onclick="closeModal('modal-iuran')">✕</button>
-    </div>
+    <div class="modal-header"><span class="modal-title">Update Status Iuran</span><button class="modal-close" data-close="modal-iuran">✕</button></div>
     <div style="font-size:15px;font-weight:600;margin-bottom:16px;" id="modal-iuran-nama"></div>
-    <form id="form-iuran" onsubmit="saveIuran(event)">
-      <div class="form-group"><label>Status</label>
-        <select id="i-status"><option value="lunas">✅ Lunas</option><option value="belum">❌ Belum Bayar</option></select>
-      </div>
+    <form id="form-iuran">
+      <div class="form-group"><label>Status</label><select id="i-status"><option value="lunas">✅ Lunas</option><option value="belum">❌ Belum Bayar</option></select></div>
       <div class="form-group"><label>Nominal (Rp)</label><input type="number" id="i-nominal" value="50000" min="0"></div>
-      <div class="form-group">
-        <label>Tagihan Bulan</label>
-        <div style="display:flex;gap:8px;">
-          <select id="i-bulan-tagihan" style="flex:1;" onchange="onUbahBulanIuran()">
-            <option value="1">Januari</option><option value="2">Februari</option>
-            <option value="3">Maret</option><option value="4">April</option>
-            <option value="5">Mei</option><option value="6">Juni</option>
-            <option value="7">Juli</option><option value="8">Agustus</option>
-            <option value="9">September</option><option value="10">Oktober</option>
-            <option value="11">November</option><option value="12">Desember</option>
-          </select>
-          <select id="i-tahun-tagihan" style="width:100px;" onchange="onUbahBulanIuran()"></select>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Keterangan / Paket</label>
-        <select id="i-ket" onchange="onUbahKetIuran()">
-          <option value="50000">💰 Rp 50.000</option>
-          <option value="70000">💰 Rp 70.000</option>
-          <option value="20000">💰 Rp 20.000</option>
-        </select>
-      </div>
-      <input type="hidden" id="i-id">
-      <input type="hidden" id="i-warga-id">
-      <div class="flex-row">
-        <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-iuran')">Batal</button>
-      </div>
+      <div class="form-group"><label>Tagihan Bulan</label><div style="display:flex;gap:8px;"><select id="i-bulan-tagihan" style="flex:1;"></select><select id="i-tahun-tagihan" style="width:100px;"></select></div></div>
+      <div class="form-group"><label>Keterangan / Paket</label><select id="i-ket"><option value="50000">💰 Rp 50.000</option><option value="70000">💰 Rp 70.000</option><option value="20000">💰 Rp 20.000</option></select></div>
+      <input type="hidden" id="i-id"><input type="hidden" id="i-warga-id">
+      <div class="flex-row"><button type="submit" class="btn btn-primary">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-iuran">Batal</button></div>
     </form>
   </div>
 </div>
 
 <div class="overlay" id="modal-kas">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-kas-title">Tambah Transaksi Kas</span>
-      <button class="modal-close" onclick="closeModal('modal-kas')">✕</button>
-    </div>
-    <form id="form-kas" onsubmit="saveKas(event)">
+    <div class="modal-header"><span class="modal-title" id="modal-kas-title">Tambah Transaksi Kas</span><button class="modal-close" data-close="modal-kas">✕</button></div>
+    <form id="form-kas">
       <div class="form-group"><label>Tanggal *</label><input type="date" id="k-tanggal" required></div>
-      <div class="form-group"><label>Jenis *</label>
-        <select id="k-jenis"><option value="masuk">📥 Kas Masuk</option><option value="keluar">📤 Kas Keluar</option></select>
-      </div>
+      <div class="form-group"><label>Jenis *</label><select id="k-jenis"><option value="masuk">📥 Kas Masuk</option><option value="keluar">📤 Kas Keluar</option></select></div>
       <div class="form-group"><label>Nominal (Rp) *</label><input type="number" id="k-nominal" min="0" required></div>
       <div class="form-group"><label>Keterangan *</label><input type="text" id="k-ket" required></div>
-      <div class="form-group"><label>Kategori</label>
-        <select id="k-kategori">
-          <option value="iuran">Iuran</option><option value="operasional">Operasional</option>
-          <option value="pembangunan">Pembangunan</option><option value="kegiatan">Kegiatan</option>
-          <option value="lainnya">Lainnya</option>
-        </select>
-      </div>
+      <div class="form-group"><label>Kategori</label><select id="k-kategori"><option value="iuran">Iuran</option><option value="operasional">Operasional</option><option value="pembangunan">Pembangunan</option><option value="kegiatan">Kegiatan</option><option value="lainnya">Lainnya</option></select></div>
       <input type="hidden" id="k-id">
-      <div class="flex-row">
-        <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-kas')">Batal</button>
-      </div>
+      <div class="flex-row"><button type="submit" class="btn btn-primary">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-kas">Batal</button></div>
     </form>
   </div>
 </div>
 
 <div class="overlay" id="modal-pengumuman">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Pengumuman</span>
-      <button class="modal-close" onclick="closeModal('modal-pengumuman')">✕</button>
-    </div>
-    <form id="form-pengumuman" onsubmit="savePengumuman(event)">
+    <div class="modal-header"><span class="modal-title">Pengumuman</span><button class="modal-close" data-close="modal-pengumuman">✕</button></div>
+    <form id="form-pengumuman">
       <div class="form-group"><label>Judul *</label><input type="text" id="p-judul" required></div>
       <div class="form-group"><label>Isi *</label><textarea id="p-isi" rows="4" required style="resize:vertical"></textarea></div>
-      <div class="form-group"><label>Prioritas</label>
-        <select id="p-prioritas"><option value="normal">Normal</option><option value="penting">Penting</option><option value="urgent">Urgent</option></select>
-      </div>
+      <div class="form-group"><label>Prioritas</label><select id="p-prioritas"><option value="normal">Normal</option><option value="penting">Penting</option><option value="urgent">Urgent</option></select></div>
       <input type="hidden" id="p-id">
-      <div class="flex-row">
-        <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-pengumuman')">Batal</button>
-      </div>
+      <div class="flex-row"><button type="submit" class="btn btn-primary">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-pengumuman">Batal</button></div>
     </form>
   </div>
 </div>
 
 <div class="overlay" id="modal-kegiatan">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Kegiatan RT</span>
-      <button class="modal-close" onclick="closeModal('modal-kegiatan')">✕</button>
-    </div>
-    <form id="form-kegiatan" onsubmit="saveKegiatan(event)">
+    <div class="modal-header"><span class="modal-title">Kegiatan RT</span><button class="modal-close" data-close="modal-kegiatan">✕</button></div>
+    <form id="form-kegiatan">
       <div class="form-group"><label>Nama Kegiatan *</label><input type="text" id="kg-nama" required></div>
       <div class="form-group"><label>Tanggal *</label><input type="date" id="kg-tanggal" required></div>
       <div class="form-group"><label>Waktu</label><input type="time" id="kg-waktu"></div>
       <div class="form-group"><label>Lokasi</label><input type="text" id="kg-lokasi"></div>
       <div class="form-group"><label>Deskripsi</label><textarea id="kg-deskripsi" rows="3" style="resize:vertical"></textarea></div>
       <input type="hidden" id="kg-id">
-      <div class="flex-row">
-        <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-kegiatan')">Batal</button>
-      </div>
+      <div class="flex-row"><button type="submit" class="btn btn-primary">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-kegiatan">Batal</button></div>
     </form>
   </div>
 </div>
 
-<!-- MODAL STRUKTUR RT -->
 <div class="overlay" id="modal-struktur">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Edit Struktur Pengurus</span>
-      <button class="modal-close" onclick="closeModal('modal-struktur')">✕</button>
-    </div>
-    <form id="form-struktur" onsubmit="saveStruktur(event)">
-      <div class="form-group">
-        <label>👑 Ketua RT</label>
-        <input type="text" id="s-ketua" placeholder="Nama Ketua RT" required>
-      </div>
-      <div class="form-group">
-        <label>📋 Sekretaris 1</label>
-        <input type="text" id="s-sekretaris1" placeholder="Nama Sekretaris 1">
-      </div>
-      <div class="form-group">
-        <label>📋 Sekretaris 2</label>
-        <input type="text" id="s-sekretaris2" placeholder="Nama Sekretaris 2">
-      </div>
-      <div class="form-group">
-        <label>💰 Bendahara 1</label>
-        <input type="text" id="s-bendahara1" placeholder="Nama Bendahara 1">
-      </div>
-      <div class="form-group">
-        <label>💰 Bendahara 2</label>
-        <input type="text" id="s-bendahara2" placeholder="Nama Bendahara 2">
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px;">
-        <button type="submit" class="btn btn-primary" style="flex:1">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-struktur')" style="flex:1">Batal</button>
-      </div>
+    <div class="modal-header"><span class="modal-title">Edit Struktur Pengurus</span><button class="modal-close" data-close="modal-struktur">✕</button></div>
+    <form id="form-struktur">
+      <div class="form-group"><label>👑 Ketua RT</label><input type="text" id="s-ketua" required></div>
+      <div class="form-group"><label>📋 Sekretaris 1</label><input type="text" id="s-sekretaris1"></div>
+      <div class="form-group"><label>📋 Sekretaris 2</label><input type="text" id="s-sekretaris2"></div>
+      <div class="form-group"><label>💰 Bendahara 1</label><input type="text" id="s-bendahara1"></div>
+      <div class="form-group"><label>💰 Bendahara 2</label><input type="text" id="s-bendahara2"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;"><button type="submit" class="btn btn-primary" style="flex:1">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-struktur" style="flex:1">Batal</button></div>
     </form>
   </div>
 </div>
-
-<!-- ============================================================
-     SEMUA JS DALAM SATU BLOK — urutan dijamin benar
-     ============================================================ -->
-<script>
-// ============================================================
-// CONFIG & STATE
-// ============================================================
-const SUPABASE_URL = 'https://oimhuaiylljjwzkzftdz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pbWh1YWl5bGxqand6a3pmdGR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTg3NzEsImV4cCI6MjA4ODk3NDc3MX0.8qYLtTt9LKO5Gem606rf2fyag8USQgo4u_vTzegmf-g';
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ============================================================
-// BUKTI PEMBAYARAN — WA LINK GENERATOR
-// ============================================================
-function generateBuktiLink(warga, iuran) {
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'];
-  const data = {
-    nama  : warga.nama_kk,
-    blok  : warga.blok,
-    nomor : warga.nomor_rumah,
-    bulan : bulanNama[iuran.bulan],
-    tahun : iuran.tahun,
-    nominal: iuran.nominal,
-    tgl   : iuran.tgl_bayar || '',
-    id    : iuran.id,
-    keterangan: iuran.keterangan || ''
-  };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-  return `https://rt-03.vercel.app?bukti=${encoded}`;
-}
-
-function buatPesanWA(warga, iuran) {
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'];
-  const noBukti   = `RT03/${iuran.tahun}/${String(iuran.bulan).padStart(2,'0')}/${iuran.id.slice(-6).toUpperCase()}`;
-  const tglBayar  = iuran.tgl_bayar
-    ? new Date(iuran.tgl_bayar).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})
-    : '-';
-  const nominal   = 'Rp ' + Number(iuran.nominal).toLocaleString('id-ID');
-  const bulanLabel= `${bulanNama[iuran.bulan]} ${iuran.tahun}`;
-  const linkBukti = generateBuktiLink(warga, iuran);
-
-  // Rincian hanya tampil saat keterangan = akomodasi
-  const rincian = iuran.keterangan === 'akomodasi'
-    ? '\nRincian Iuran anda :\nRp.45.000 untuk sampah, keamanan, rukem.\nRp.5000 untuk kas RT\n'
-    : '';
-
-  return `Yth. Bapak/Ibu *${warga.nama_kk}*
-
-Pembayaran iuran bulan *${bulanLabel}* telah kami terima.
-
-📋 No. Bukti : ${noBukti}
-🏠 No. Rumah : Blok ${warga.blok}-${warga.nomor_rumah}
-💰 Nominal   : ${nominal}
-📅 Tgl Bayar : ${tglBayar}
-
-🖼️ Bukti pembayaran:
-${linkBukti}
-${rincian}
-Terima kasih atas kepercayaan dan partisipasi aktif Bapak/Ibu. Bersama kita wujudkan lingkungan Villa Bintaro Asri yang nyaman dan harmonis 🤝
-*RT 03 RW 12 Villa Bintaro Asri*`;
-}
-
-function kirimWAWarga(nomorHP, pesanTeks) {
-  if (!nomorHP) { showToast('Nomor HP warga belum diisi!', 'error'); return; }
-  let nomor = nomorHP.replace(/\D/g, '');
-  if (nomor.startsWith('0')) nomor = '62' + nomor.slice(1);
-  const url = `https://wa.me/${nomor}?text=${encodeURIComponent(pesanTeks)}`;
-  window.open(url, '_blank');
-}
-
-let currentUser     = null;
-let allWarga        = [];
-let allIuranData    = [];
-let allKasData      = [];
-let filterBlokAktif = '';
-let editWargaId     = null;
-let editKasId       = null;
-
-// ============================================================
-// UTILS
-// ============================================================
-function rp(n) {
-  if (!n && n !== 0) return '-';
-  return 'Rp ' + Number(n).toLocaleString('id-ID');
-}
-function fmtDate(d) {
-  if (!d) return '-';
-  return new Date(d).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
-}
-function showToast(msg, type = 'success') {
-  const el = document.createElement('div');
-  el.className = `toast toast-${type}`;
-  el.innerHTML = (type==='success'?'✅':type==='error'?'❌':'ℹ️') + ' ' + msg;
-  document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-function openModal(id)  { document.getElementById(id).classList.add('show'); }
-async function logAktivitas(aksi, detail = '') {
-  try { await db.from('log_aktivitas').insert({ aksi, detail, user_type: currentUser==='admin'?'admin':'warga' }); } catch(e) {}
-}
-function initFilterBulanTahun(elBulanId, elTahunId, onChangeFn) {
-  const now = new Date();
-  const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const selBulan = document.getElementById(elBulanId);
-  const selTahun = document.getElementById(elTahunId);
-  selBulan.innerHTML = bulanNama.map((n,i) =>
-    `<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${n}</option>`).join('');
-  selTahun.innerHTML = '';
-  for (let y = now.getFullYear(); y >= now.getFullYear()-3; y--)
-    selTahun.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
-  if (onChangeFn) { selBulan.onchange = onChangeFn; selTahun.onchange = onChangeFn; }
-}
-function navigateTo(page, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  btn.classList.add('active');
-  const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
-  // current-page-title dihapus dari DOM, skip jika tidak ada
-  const cpEl = document.getElementById('current-page-title');
-  if(cpEl) cpEl.textContent = titles[page] || page;
-  // FIX: simpan halaman terakhir agar dipulihkan saat refresh
-  localStorage.setItem('rt_last_page', page);
-  if (page==='warga')  loadWarga();
-  if (page==='iuran')  loadIuran();
-  if (page==='kas')    loadKas();
-  if (page==='profil') loadProfil();
-}
-document.querySelectorAll('.overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('show'); });
-});
-
-// ============================================================
-// AUTH + SESSION PERSISTENCE
-// ============================================================
-
-function saveSession(user) {
-  if (user === 'admin') {
-    localStorage.setItem('rt_session', JSON.stringify({ role: 'admin' }));
-  } else {
-    localStorage.setItem('rt_session', JSON.stringify({ role: 'warga', id: user.id }));
-  }
-}
-function clearSession() {
-  localStorage.removeItem('rt_session');
-}
-async function restoreSession() {
-  const raw = localStorage.getItem('rt_session');
-  if (!raw) return false;
-  try {
-    const session = JSON.parse(raw);
-    if (session.role === 'admin') {
-      // Cek apakah device session masih valid di Supabase
-      const deviceId = getDeviceId();
-      const { data: devData } = await db.from('admin_sessions')
-        .select('id').eq('device_id', deviceId).limit(1);
-      if (!devData || devData.length === 0) {
-        // Session device sudah di-revoke → paksa logout
-        clearSession();
-        showToast('Sesi device ini telah dinonaktifkan oleh admin.', 'error');
-        return false;
-      }
-      // Update last_active
-      await db.from('admin_sessions').update({ last_active: new Date().toISOString() })
-        .eq('device_id', deviceId);
-      currentUser = 'admin';
-      return true;
-    } else if (session.role === 'warga' && session.id) {
-      const { data, error } = await db.from('warga').select('*').eq('id', session.id).single();
-      if (error || !data) { clearSession(); return false; }
-      currentUser = data;
-      return true;
-    }
-  } catch(e) { clearSession(); return false; }
-  return false;
-}
-
-function switchLoginTab(tab) {
-  document.querySelectorAll('.login-tab').forEach((t,i) =>
-    t.classList.toggle('active', (i===0&&tab==='admin')||(i===1&&tab==='warga')));
-  document.getElementById('login-form-admin').style.display = tab==='admin' ? 'block' : 'none';
-  document.getElementById('login-form-warga').style.display = tab==='warga' ? 'block' : 'none';
-}
-function loginAdmin() {
-  const pass = document.getElementById('admin-pass').value.trim();
-  const passBenar = localStorage.getItem('rt_admin_pass') || '111';
-  if (pass !== passBenar) { showToast('Kode admin salah!','error'); return; }
-  currentUser = 'admin';
-  saveSession(currentUser);
-  // Simpan session device ke Supabase
-  registerDeviceSession();
-  startApp();
-}
-async function loginWarga() {
-  const blokInput = document.getElementById('warga-blok').value.trim().toUpperCase();
-  const pass      = document.getElementById('warga-pass').value.trim();
-  const [blok, nomor] = blokInput.includes('-') ? blokInput.split('-') : [blokInput, ''];
-  if (!blok) { showToast('Masukkan blok rumah!','error'); return; }
-  const { data, error } = await db.from('warga').select('*')
-    .ilike('blok', blok).ilike('nomor_rumah', nomor||'%');
-  if (error||!data||!data.length) { showToast('Data warga tidak ditemukan!','error'); return; }
-  const warga = data.find(w => w.password===pass);
-  if (!warga) { showToast('Password salah!','error'); return; }
-  currentUser = warga;
-  saveSession(currentUser);
-  startApp();
-}
-function logout() {
-  currentUser = null;
-  clearSession();
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('admin-pass').value = '';
-  document.getElementById('warga-blok').value = '';
-  document.getElementById('warga-pass').value = '';
-}
-async function startApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  const isAdmin = currentUser === 'admin';
-  document.getElementById('user-badge').textContent = isAdmin
-    ? '👮 Admin' : ('🏠 ' + currentUser.blok + '-' + currentUser.nomor_rumah);
-  ['btn-tambah-warga','btn-generate-iuran','btn-tambah-kas','btn-add-pengumuman','btn-add-kegiatan','btn-sinkron-kas','btn-sinkron-warga','btn-bersih-kas'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.style.display = isAdmin ? 'block' : 'none';
-  });
-  const logCard   = document.getElementById('log-card');   if (logCard)   logCard.style.display   = isAdmin ? 'block' : 'none';
-  const thNik     = document.getElementById('th-nik');      if (thNik)     thNik.style.display     = isAdmin ? '' : 'none';
-  const thKasAksi = document.getElementById('th-kas-aksi'); if (thKasAksi) thKasAksi.style.display = isAdmin ? '' : 'none';
-  const thIuranAksi  = document.getElementById('th-iuran-aksi');  if (thIuranAksi)  thIuranAksi.style.display  = isAdmin ? '' : 'none';
-  const thIuranBukti = document.getElementById('th-iuran-bukti'); if (thIuranBukti) thIuranBukti.style.display = isAdmin ? '' : 'none';
-  initFilterBulanTahun('filter-bulan-iuran', 'filter-tahun-iuran', loadIuran);
-
-  // FIX Bug 3: pulihkan halaman terakhir (sebelum refresh) — bukan selalu dashboard
-  const lastPage = localStorage.getItem('rt_last_page') || 'dashboard';
-  const navBtns  = document.querySelectorAll('.nav-item');
-  const pageOrder = ['dashboard','warga','iuran','kas','profil'];
-  const pageIdx  = pageOrder.indexOf(lastPage);
-  const targetBtn = navBtns[pageIdx >= 0 ? pageIdx : 0];
-
-  // Tampilkan halaman yang benar tanpa trigger load data dulu
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + lastPage).classList.add('active');
-  targetBtn.classList.add('active');
-  const titles = { dashboard:'Dashboard', warga:'Daftar Warga', iuran:'Iuran Warga', kas:'Kas RT', profil:'Profil' };
-  document.getElementById('current-page-title').textContent = titles[lastPage] || lastPage;
-
-  // OPTIMASI: Tampilkan UI segera, semua data load paralel di background
-  // Tidak ada await yang blokir — skeleton sudah tampil di HTML
-  const allLoads = [loadDashboard()];
-  if (lastPage === 'warga')  allLoads.push(loadWarga());
-  if (lastPage === 'iuran')  allLoads.push(loadIuran());
-  if (lastPage === 'kas')    allLoads.push(loadKas());
-  if (lastPage === 'profil') allLoads.push(loadProfil());
-  // Background loads: halaman lain yang belum aktif
-  if (lastPage !== 'warga')  allLoads.push(loadWarga());
-  if (lastPage !== 'kas')    allLoads.push(loadKas());
-  Promise.all(allLoads).catch(() => {});
-
-  // FIX Bug 2: reload data aktif saat tab/app kembali visible (mencegah freeze)
-  if (!window._rtVisibilityBound) {
-    window._rtVisibilityBound = true;
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && currentUser) {
-        const activePage = localStorage.getItem('rt_last_page') || 'dashboard';
-        if (activePage === 'dashboard')    loadDashboard();
-        else if (activePage === 'warga')   loadWarga();
-        else if (activePage === 'iuran')   loadIuran();
-        else if (activePage === 'kas')     loadKas();
-        else if (activePage === 'profil')  loadProfil();
-      }
-    });
-  }
-}
-
-// ============================================================
-// DASHBOARD
-// ============================================================
-async function loadDashboard() {
-  const now = new Date(), bln = now.getMonth()+1, thn = now.getFullYear();
-
-  // Tampilkan struktur dari cache localStorage DULU (instant, tanpa tunggu network)
-  const lokalStruktur = localStorage.getItem(STRUKTUR_KEY);
-  if (lokalStruktur) {
-    try { renderStruktur({ ketua:'',sekretaris1:'',sekretaris2:'',bendahara1:'',bendahara2:'', ...JSON.parse(lokalStruktur) }); } catch(e) {}
-  }
-
-  // Semua query + render jalan PARALEL — tidak ada waterfall
-  const [resW, resI, resK] = await Promise.all([
-    db.from('warga').select('id', { count:'exact' }),
-    db.from('iuran').select('status').eq('bulan', bln).eq('tahun', thn),  // hanya kolom status, lebih ringan
-    db.from('kas').select('nominal,jenis')
-  ]);
-
-  const totalWarga = resW.count || 0;
-  document.getElementById('stat-warga').textContent = totalWarga;
-  const lunas = (resI.data||[]).filter(i => i.status==='lunas').length;
-  document.getElementById('stat-lunas').textContent = lunas;
-  document.getElementById('stat-belum').textContent = Math.max(0, totalWarga - lunas);
-  const kasData  = resK.data || [];
-  const masuk    = kasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
-  const keluar   = kasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
-  document.getElementById('stat-saldo').textContent = rp(masuk - keluar);
-
-  // Update summary card on dashboard
-  const dW = document.getElementById('dash-warga');
-  const dL = document.getElementById('dash-lunas');
-  const dS = document.getElementById('dash-saldo');
-  if(dW) { dW.textContent = totalWarga; dW.classList.add('fade-in'); }
-  if(dL) { dL.textContent = lunas;      dL.classList.add('fade-in'); }
-  if(dS) { dS.textContent = rp(masuk - keluar); dS.classList.add('fade-in'); }
-
-  // Paralel: pengumuman, kegiatan, struktur (struktur refresh dari Supabase di background)
-  Promise.all([loadPengumuman(), loadKegiatan(), loadStruktur()]).catch(()=>{});
-}
-
-// ============================================================
-// STRUKTUR RT
-// ============================================================
-const STRUKTUR_KEY = 'rt_struktur';
-
-async function loadStruktur() {
-  const btnEdit = document.getElementById('btn-edit-struktur');
-  if (btnEdit) btnEdit.style.display = currentUser === 'admin' ? 'block' : 'none';
-  let s = { ketua:'', sekretaris1:'', sekretaris2:'', bendahara1:'', bendahara2:'' };
-
-  // LOCAL-FIRST: render dari localStorage SEGERA (instant), lalu update dari Supabase
-  const lokalCache = localStorage.getItem(STRUKTUR_KEY);
-  if (lokalCache) {
-    try { s = { ...s, ...JSON.parse(lokalCache) }; renderStruktur(s); } catch(e) {}
-  }
-
-  // Sinkron dari Supabase di background — update jika berbeda
-  try {
-    const { data, error } = await db.from('pengaturan').select('nilai').eq('kunci', STRUKTUR_KEY).maybeSingle();
-    if (!error && data && data.nilai) {
-      const fresh = { ...s, ...JSON.parse(data.nilai) };
-      // Simpan ke localStorage agar kunjungan berikutnya instant
-      localStorage.setItem(STRUKTUR_KEY, data.nilai);
-      renderStruktur(fresh);
-    }
-  } catch(e) {
-    // Sudah render dari localStorage di atas, tidak perlu action
-  }
-}
-
-function renderStruktur(s) {
-  const el = document.getElementById('struktur-content');
-  if (!el) return;
-  const kosong = '<span style="color:#94A3B8;font-style:italic;font-size:12px;">Belum diisi</span>';
-
-  // Card dengan icon bulat + jabatan + nama — mirip gambar
-  const card = (bgIcon, iconSvg, jabatanColor, jabatan, nama) => `
-    <div style="display:flex;align-items:center;gap:0;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,0.10);overflow:hidden;min-height:70px;">
-      <div style="width:64px;min-height:70px;background:${bgIcon};display:flex;align-items:center;justify-content:center;border-radius:12px;margin:6px;flex-shrink:0;">
-        ${iconSvg}
-      </div>
-      <div style="padding:10px 10px 10px 4px;">
-        <div style="font-size:10px;font-weight:800;color:${jabatanColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">${jabatan}</div>
-        <div style="width:22px;height:2px;background:${jabatanColor};border-radius:2px;margin-bottom:5px;"></div>
-        <div style="font-size:14px;font-weight:700;color:#1E293B;line-height:1.3;">${nama || kosong}</div>
-      </div>
-    </div>`;
-
-  // SVG Icons
-  const svgKetua = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3" fill="white"/><path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="white" stroke-width="2" stroke-linecap="round"/><polygon points="12,2 13,5 16,5 13.5,6.8 14.5,10 12,8.2 9.5,10 10.5,6.8 8,5 11,5" fill="#FFD700"/></svg>`;
-  const svgSekretaris = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="13" height="16" rx="2" stroke="white" stroke-width="2"/><path d="M8 7h6M8 10h6M8 13h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/><circle cx="18" cy="18" r="4" fill="white" fill-opacity="0.3" stroke="white" stroke-width="1.5"/><path d="M16.5 18l1 1 2-2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const svgBendahara = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="20" height="14" rx="3" stroke="white" stroke-width="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" stroke="white" stroke-width="2"/><circle cx="12" cy="14" r="2" fill="white"/></svg>`;
-
-  // Garis connector tree
-  const lineV = (h='40px') => `<div style="width:2px;height:${h};background:#CBD5E1;margin:0 auto;"></div>`;
-  const lineH = `
-    <div style="display:flex;align-items:flex-start;justify-content:center;position:relative;margin-bottom:0;">
-      <div style="position:absolute;top:0;left:25%;right:25%;height:2px;background:#CBD5E1;"></div>
-      <div style="width:2px;height:20px;background:#CBD5E1;position:absolute;top:0;left:25%;transform:translateX(-50%);"></div>
-      <div style="width:2px;height:20px;background:#CBD5E1;position:absolute;top:0;right:25%;transform:translateX(50%);"></div>
-    </div>`;
-
-  el.innerHTML = `
-    <div style="background:linear-gradient(135deg,#EFF6FF 0%,#F0F9FF 100%);border-radius:14px;padding:16px 12px 20px;position:relative;overflow:hidden;">
-
-      <!-- Dekorasi sudut -->
-      <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;border:2px solid #BFDBFE;opacity:0.5;"></div>
-      <div style="position:absolute;bottom:-30px;left:-20px;width:100px;height:100px;border-radius:50%;background:#DBEAFE;opacity:0.3;"></div>
-
-      <!-- Header -->
-      <div style="text-align:center;margin-bottom:4px;position:relative;">
-        <div style="font-size:22px;font-weight:900;color:#1E3A5F;letter-spacing:1px;text-transform:uppercase;">STRUKTUR</div>
-        <div style="display:inline-block;background:#1E3A5F;color:white;font-size:11px;font-weight:700;padding:3px 14px;border-radius:20px;letter-spacing:1px;margin-bottom:4px;">• RT03 RW12 •</div>
-      </div>
-
-      <!-- Ketua -->
-      ${lineV('16px')}
-      <div style="padding:0 20px;">
-        ${card('#1E3A5F', svgKetua, '#1565C0', 'Ketua RT', s.ketua)}
-      </div>
-
-      <!-- Konektor ke Sekretaris -->
-      ${lineV('20px')}
-      ${lineH}
-      <div style="height:20px;"></div>
-
-      <!-- Sekretaris -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0;">
-        ${card('#00897B', svgSekretaris, '#00695C', 'Sekretaris 1', s.sekretaris1)}
-        ${card('#1976D2', svgSekretaris, '#1565C0', 'Sekretaris 2', s.sekretaris2)}
-      </div>
-
-      <!-- Konektor ke Bendahara -->
-      ${lineV('20px')}
-      ${lineH}
-      <div style="height:20px;"></div>
-
-      <!-- Bendahara -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        ${card('#43A047', svgBendahara, '#2E7D32', 'Bendahara 1', s.bendahara1)}
-        ${card('#FB8C00', svgBendahara, '#E65100', 'Bendahara 2', s.bendahara2)}
-      </div>
-
-    </div>`;
-}
-
-async function showModalStruktur() {
-  let s = { ketua:'', sekretaris1:'', sekretaris2:'', bendahara1:'', bendahara2:'' };
-  try {
-    const { data, error } = await db.from('pengaturan').select('nilai').eq('kunci', STRUKTUR_KEY).maybeSingle();
-    if (!error && data && data.nilai) {
-      s = { ...s, ...JSON.parse(data.nilai) };
-    } else {
-      const lokal = localStorage.getItem(STRUKTUR_KEY);
-      if (lokal) s = { ...s, ...JSON.parse(lokal) };
-    }
-  } catch(e) {
-    const lokal = localStorage.getItem(STRUKTUR_KEY);
-    if (lokal) try { s = { ...s, ...JSON.parse(lokal) }; } catch(e2) {}
-  }
-  document.getElementById('s-ketua').value       = s.ketua || '';
-  document.getElementById('s-sekretaris1').value = s.sekretaris1 || '';
-  document.getElementById('s-sekretaris2').value = s.sekretaris2 || '';
-  document.getElementById('s-bendahara1').value  = s.bendahara1 || '';
-  document.getElementById('s-bendahara2').value  = s.bendahara2 || '';
-  openModal('modal-struktur');
-}
-
-async function saveStruktur(e) {
-  e.preventDefault();
-  const s = {
-    ketua:       document.getElementById('s-ketua').value.trim(),
-    sekretaris1: document.getElementById('s-sekretaris1').value.trim(),
-    sekretaris2: document.getElementById('s-sekretaris2').value.trim(),
-    bendahara1:  document.getElementById('s-bendahara1').value.trim(),
-    bendahara2:  document.getElementById('s-bendahara2').value.trim(),
-  };
-  const json = JSON.stringify(s);
-  // Simpan ke localStorage sebagai fallback (selalu berhasil)
-  localStorage.setItem(STRUKTUR_KEY, json);
-  // Coba simpan ke Supabase juga (jika tabel sudah ada)
-  try {
-    const { error } = await db.from('pengaturan')
-      .upsert({ kunci: STRUKTUR_KEY, nilai: json }, { onConflict: 'kunci' });
-    if (error) {
-      // Tabel belum ada — data sudah aman di localStorage
-      showToast('Tersimpan lokal (buat tabel pengaturan di Supabase untuk sinkron antar device)', 'info');
-    } else {
-      showToast('Struktur pengurus disimpan!');
-    }
-  } catch(e) {
-    showToast('Tersimpan lokal', 'info');
-  }
-  closeModal('modal-struktur');
-  renderStruktur(s);
-  logAktivitas('Edit Struktur RT', s.ketua);
-}
-
-// ============================================================
-// PENGUMUMAN & KEGIATAN
-// ============================================================
-async function loadPengumuman() {
-  const { data } = await db.from('pengumuman').select('id,judul,isi,prioritas,created_at').eq('aktif',true).order('created_at',{ascending:false}).limit(5);
-  const el = document.getElementById('list-pengumuman');
-  if (!data||!data.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Belum ada pengumuman</div>'; return; }
-  const priColor = { normal:'badge-info', penting:'badge-warning', urgent:'badge-danger' };
-  el.innerHTML = data.map(p=>`
-    <div style="padding:12px 0;border-bottom:1px solid #F0F0F0;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span class="badge ${priColor[p.prioritas]||'badge-info'}">${p.prioritas.toUpperCase()}</span>
-        <span style="font-weight:700;font-size:14px;">${p.judul}</span>
-        ${currentUser==='admin'?`<button onclick="deletePengumuman('${p.id}')" style="margin-left:auto;background:none;border:none;color:#E53935;cursor:pointer;font-size:12px;">🗑️</button>`:''}
-      </div>
-      <div style="font-size:13px;color:#555;line-height:1.5;">${p.isi}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;">${fmtDate(p.created_at)}</div>
-    </div>`).join('');
-}
-function showModalPengumuman() {
-  document.getElementById('form-pengumuman').reset(); document.getElementById('p-id').value=''; openModal('modal-pengumuman');
-}
-async function savePengumuman(e) {
-  e.preventDefault();
-  const id=document.getElementById('p-id').value;
-  const payload={ judul:document.getElementById('p-judul').value, isi:document.getElementById('p-isi').value, prioritas:document.getElementById('p-prioritas').value };
-  const r = id ? await db.from('pengumuman').update(payload).eq('id',id) : await db.from('pengumuman').insert(payload);
-  if (r.error) { showToast('Gagal!','error'); return; }
-  showToast('Pengumuman disimpan!'); closeModal('modal-pengumuman'); document.getElementById('form-pengumuman').reset(); loadPengumuman();
-}
-async function deletePengumuman(id) {
-  if (!confirm('Hapus pengumuman?')) return;
-  await db.from('pengumuman').delete().eq('id',id);
-  showToast('Pengumuman dihapus!'); loadPengumuman();
-}
-async function loadKegiatan() {
-  const today = new Date().toISOString().slice(0,10);
-  const { data } = await db.from('kegiatan').select('*').gte('tanggal',today).order('tanggal').limit(5);
-  const el = document.getElementById('list-kegiatan');
-  if (!data||!data.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Belum ada kegiatan</div>'; return; }
-  el.innerHTML = data.map(k=>`
-    <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #F0F0F0;align-items:center;">
-      <div style="background:var(--primary-light);color:var(--primary);padding:8px 10px;border-radius:10px;text-align:center;min-width:48px;">
-        <div style="font-size:16px;font-weight:800;">${new Date(k.tanggal).getDate()}</div>
-        <div style="font-size:10px;">${new Date(k.tanggal).toLocaleDateString('id-ID',{month:'short'})}</div>
-      </div>
-      <div style="flex:1;">
-        <div style="font-weight:700;font-size:14px;">${k.nama}</div>
-        <div style="font-size:12px;color:#777;">${k.waktu||''} ${k.lokasi?'· '+k.lokasi:''}</div>
-      </div>
-      ${currentUser==='admin'?`<button onclick="deleteKegiatan('${k.id}')" style="background:none;border:none;color:#E53935;cursor:pointer;">🗑️</button>`:''}
-    </div>`).join('');
-}
-function showModalKegiatan() {
-  document.getElementById('form-kegiatan').reset(); document.getElementById('kg-id').value=''; openModal('modal-kegiatan');
-}
-async function saveKegiatan(e) {
-  e.preventDefault();
-  const id=document.getElementById('kg-id').value;
-  const payload={ nama:document.getElementById('kg-nama').value, tanggal:document.getElementById('kg-tanggal').value, waktu:document.getElementById('kg-waktu').value||null, lokasi:document.getElementById('kg-lokasi').value, deskripsi:document.getElementById('kg-deskripsi').value };
-  const r = id ? await db.from('kegiatan').update(payload).eq('id',id) : await db.from('kegiatan').insert(payload);
-  if (r.error) { showToast('Gagal!','error'); return; }
-  showToast('Kegiatan disimpan!'); closeModal('modal-kegiatan'); document.getElementById('form-kegiatan').reset(); loadKegiatan();
-}
-async function deleteKegiatan(id) {
-  if (!confirm('Hapus kegiatan?')) return;
-  await db.from('kegiatan').delete().eq('id',id);
-  showToast('Kegiatan dihapus!'); loadKegiatan();
-}
-
-// ============================================================
-// WARGA
-// ============================================================
-async function loadWarga() {
-  const isAdmin = currentUser==='admin';
-  // Ambil semua data lalu sort di client: blok abjad, nomor rumah numerik
-  let query = db.from('warga').select('*');
-  const { data, error } = await query;
-  if (error) { showToast('Gagal memuat data warga','error'); return; }
-  // Sort: blok abjad, lalu nomor rumah sebagai angka
-  allWarga = (data || []).sort((a, b) => {
-    const blokCmp = a.blok.localeCompare(b.blok, 'id', {sensitivity:'base'});
-    if (blokCmp !== 0) return blokCmp;
-    return parseInt(a.nomor_rumah) - parseInt(b.nomor_rumah);
-  });
-  if (isAdmin) {
-    const bloks = [...new Set(allWarga.map(w=>w.blok))].sort();
-    const fc = document.getElementById('filter-blok');
-    fc.innerHTML = `<button class="filter-chip ${filterBlokAktif===''?'active':''}" onclick="setFilterBlok('',this)">Semua</button>`;
-    bloks.forEach(b => {
-      const btn = document.createElement('button');
-      btn.className = `filter-chip ${filterBlokAktif===b?'active':''}`;
-      btn.textContent = 'Blok ' + b;
-      btn.onclick = () => setFilterBlok(b, btn);
-      fc.appendChild(btn);
-    });
-  }
-  renderWarga(allWarga);
-}
-function renderWarga(data) {
-  const isAdmin = currentUser==='admin';
-  const tbody = document.getElementById('tabel-warga');
-  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👥</div>Tidak ada warga</div></td></tr>'; return; }
-  tbody.innerHTML = data.map(w=>{
-    const noHp = w.no_hp || '';
-    const waLink = noHp
-      ? (isAdmin
-          ? `<a href="https://wa.me/${noHp.replace(/[^0-9]/g,'').replace(/^0/,'62')}" target="_blank" onclick="event.stopPropagation()" style="color:#25D366;font-size:12px;font-weight:600;text-decoration:none;">📲 ${noHp}</a>`
-          : `<span style="font-size:12px;">${noHp}</span>`)
-      : '<span style="font-size:11px;color:#aaa;">-</span>';
-    return `<tr>
-      <td><b>Blok ${w.blok}-${w.nomor_rumah}</b></td>
-      <td>
-        <span class="click-name" onclick="showAnggotaKeluarga('${w.id}','${w.nama_kk.replace(/'/g,"\\'")}')">
-          ${w.nama_kk}
-        </span>
-      </td>
-      ${isAdmin?`<td style="font-size:11px;color:#999;">${w.nik}</td>`:''}
-      <td><span class="badge ${w.status_hunian==='pribadi'?'badge-success':'badge-warning'}">${w.status_hunian}</span></td>
-      <td style="text-align:center;">${w.jumlah_anggota}</td>
-      <td onclick="event.stopPropagation()" style="white-space:nowrap;">${waLink}</td>
-      <td onclick="event.stopPropagation()">${isAdmin?`<div class="flex-row">
-        <button class="btn btn-warning btn-sm" onclick="showModalEditWarga('${w.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteWarga('${w.id}')">🗑️</button>
-      </div>`:''}</td>
-    </tr>`;
-  }).join('');
-}
-function setFilterBlok(blok, btn) {
-  filterBlokAktif = blok;
-  document.querySelectorAll('#filter-blok .filter-chip').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  filterWarga(document.getElementById('search-warga').value);
-}
-function filterWarga(q) {
-  let data = allWarga;
-  if (filterBlokAktif) data = data.filter(w=>w.blok===filterBlokAktif);
-  if (q) { const lq=q.toLowerCase(); data=data.filter(w=>w.nama_kk.toLowerCase().includes(lq)||w.blok.toLowerCase().includes(lq)||(currentUser==='admin'&&w.nik&&w.nik.includes(lq))); }
-  renderWarga(data);
-}
-async function showRiwayatWarga(wargaId, nama) {
-  openModal('modal-riwayat');
-  document.getElementById('modal-riwayat-nama').textContent = '📋 ' + nama;
-  const { data } = await db.from('iuran').select('*').eq('warga_id',wargaId).order('tahun').order('bulan');
-  const el = document.getElementById('modal-riwayat-content');
-  if (!data||!data.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">💳</div>Belum ada riwayat iuran</div>'; return; }
-  const bn=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-  el.innerHTML=`<div class="table-wrap"><table>
-    <thead><tr><th>Bulan</th><th>Tahun</th><th>Status</th><th>Bayar</th><th>Nominal</th></tr></thead>
-    <tbody>${data.map(i=>`<tr><td>${bn[i.bulan]}</td><td>${i.tahun}</td><td><span class="badge ${i.status==='lunas'?'badge-success':'badge-danger'}">${i.status}</span></td><td style="font-size:12px;">${fmtDate(i.tgl_bayar)}</td><td>${rp(i.nominal)}</td></tr>`).join('')}</tbody>
-  </table></div>`;
-}
-function showModalTambahWarga() {
-  editWargaId=null;
-  document.getElementById('modal-warga-title').textContent='Tambah Warga';
-  document.getElementById('form-warga').reset();
-  document.getElementById('w-id').value='';
-  document.getElementById('w-anggota').value = 1;
-  generateKolomAnggota(1);
-  openModal('modal-warga');
-}
-async function showModalEditWarga(id) {
-  const w=allWarga.find(w=>w.id===id); if(!w) return;
-  editWargaId=id;
-  document.getElementById('modal-warga-title').textContent='Edit Data Warga';
-  document.getElementById('w-id').value=id;
-  document.getElementById('w-nik').value=w.nik;
-  document.getElementById('w-nama').value=w.nama_kk;
-  document.getElementById('w-blok').value=w.blok;
-  document.getElementById('w-nomor').value=w.nomor_rumah;
-  document.getElementById('w-status').value=w.status_hunian;
-  document.getElementById('w-anggota').value=w.jumlah_anggota;
-  document.getElementById('w-hp').value=w.no_hp||'';
-
-  // Ambil data anggota dari Supabase lalu generate kolom
-  const { data: anggotaList } = await db.from('anggota_keluarga')
-    .select('*').eq('warga_id', id).order('created_at');
-  generateKolomAnggota(w.jumlah_anggota, anggotaList || []);
-  openModal('modal-warga');
-}
-async function saveWarga(e) {
-  e.preventDefault();
-  const id=document.getElementById('w-id').value, nik=document.getElementById('w-nik').value.trim();
-  const jumlah = parseInt(document.getElementById('w-anggota').value)||1;
-  const payload={ nik, nama_kk:document.getElementById('w-nama').value.trim(), blok:document.getElementById('w-blok').value.trim().toUpperCase(), nomor_rumah:document.getElementById('w-nomor').value.trim(), status_hunian:document.getElementById('w-status').value, jumlah_anggota:jumlah, no_hp:document.getElementById('w-hp').value.trim() };
-  const { data:existing }=await db.from('warga').select('id').eq('nik',nik).neq('id',id||'00000000-0000-0000-0000-000000000000');
-  if (existing&&existing.length) { showToast('NIK sudah terdaftar!','error'); return; }
-  let wargaId = id;
-  let err;
-  if (id) {
-    const r=await db.from('warga').update(payload).eq('id',id); err=r.error;
-  } else {
-    const r=await db.from('warga').insert(payload).select('id').single();
-    err=r.error; if(!err) wargaId=r.data.id;
-  }
-  if (err) { showToast('Gagal menyimpan: '+err.message,'error'); return; }
-
-  // Simpan anggota keluarga dari form
-  if (wargaId) {
-    // Hapus anggota lama lalu insert baru
-    await db.from('anggota_keluarga').delete().eq('warga_id', wargaId);
-    const rows = document.querySelectorAll('#w-anggota-list .anggota-row');
-    const anggotaData = [];
-    rows.forEach(row => {
-      const nama = row.querySelector('.a-nama-input').value.trim();
-      const hub  = row.querySelector('.a-hub-input').value;
-      if (nama) anggotaData.push({ warga_id: wargaId, nama, hubungan: hub });
-    });
-    if (anggotaData.length > 0) {
-      await db.from('anggota_keluarga').insert(anggotaData);
-    }
-    // Sync jumlah_anggota sesuai baris yang terisi
-    await db.from('warga').update({ jumlah_anggota: anggotaData.length || jumlah }).eq('id', wargaId);
-  }
-
-  if (id && wargaId) {
-    await sinkronKasWarga(wargaId, payload.nama_kk, payload.blok, payload.nomor_rumah);
-  }
-  showToast(id?'Data warga diperbarui!':'Warga berhasil ditambahkan!');
-  closeModal('modal-warga'); document.getElementById('form-warga').reset();
-  logAktivitas(id?'Edit Warga':'Tambah Warga', payload.nama_kk); loadWarga();
-}
-async function deleteWarga(id) {
-  if (!confirm('Hapus data warga ini?')) return;
-  const { error }=await db.from('warga').delete().eq('id',id);
-  if (error) { showToast('Gagal menghapus!','error'); return; }
-  showToast('Warga dihapus!'); logAktivitas('Hapus Warga',id); loadWarga();
-}
-
-// ============================================================
-// IURAN
-// ============================================================
-let filterBlokIuranAktif = '';
-
-async function loadIuran() {
-  const bulan=parseInt(document.getElementById('filter-bulan-iuran').value);
-  const tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
-  let wargaQuery=db.from('warga').select('*').order('blok').order('nomor_rumah');
-  const [resW,resI]=await Promise.all([wargaQuery, db.from('iuran').select('*').eq('bulan',bulan).eq('tahun',tahun)]);
-  allIuranData=(resW.data||[]).map(w=>({...w, iuran:(resI.data||[]).find(i=>i.warga_id===w.id)||null}));
-
-  // Generate filter blok chips
-  const isAdmin = currentUser === 'admin';
-  if (isAdmin) {
-    const bloks = [...new Set(allIuranData.map(w => w.blok))].sort();
-    const fc = document.getElementById('filter-blok-iuran');
-    if (fc) {
-      fc.innerHTML = `<button class="filter-chip ${filterBlokIuranAktif===''?'active':''}" onclick="setFilterBlokIuran('',this)">Semua</button>`;
-      bloks.forEach(b => {
-        const btn = document.createElement('button');
-        btn.className = `filter-chip ${filterBlokIuranAktif===b?'active':''}`;
-        btn.textContent = 'Blok ' + b;
-        btn.onclick = () => setFilterBlokIuran(b, btn);
-        fc.appendChild(btn);
-      });
-    }
-  }
-
-  renderIuran(allIuranData);
-}
-function renderIuran(data) {
-  const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-iuran');
-  // Update summary lunas/belum berdasarkan data yang dirender (ikut filter bulan+blok)
-  const jL = (data||[]).filter(w => w.iuran && w.iuran.status==='lunas').length;
-  const jB = (data||[]).filter(w => !w.iuran || w.iuran.status!=='lunas').length;
-  const elL=document.getElementById('sum-lunas'), elB=document.getElementById('sum-belum'), elT=document.getElementById('sum-total');
-  if(elL) elL.textContent=jL; if(elB) elB.textContent=jB; if(elT) elT.textContent=(data||[]).length;
-  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
-  tbody.innerHTML=data.map(item=>{
-    const paket = item.iuran?.keterangan;
-    const paketLabel = paket==='50000' ? '<br><span style="font-size:10px;background:#EFF6FF;color:#1565C0;padding:1px 6px;border-radius:8px;font-weight:700;">💰 50rb</span>'
-      : paket==='70000' ? '<br><span style="font-size:10px;background:#F0FDF4;color:#2E7D32;padding:1px 6px;border-radius:8px;font-weight:700;">💰 70rb</span>'
-      : paket==='20000' ? '<br><span style="font-size:10px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:8px;font-weight:700;">💰 20rb</span>'
-      : '';
-    return `
-    <tr>
-      <td><b>Blok ${item.blok}-${item.nomor_rumah}</b></td>
-      <td>${item.nama_kk}</td>
-      <td>
-        ${item.iuran?`<span class="badge ${item.iuran.status==='lunas'?'badge-success':'badge-danger'}">${item.iuran.status}</span>`:'<span class="badge badge-warning">Belum input</span>'}
-        ${paketLabel}
-      </td>
-      <td style="font-size:12px;">${item.iuran?fmtDate(item.iuran.tgl_bayar):'-'}</td>
-      ${isAdmin?`<td><button class="btn btn-primary btn-sm" onclick="showModalIuran('${item.id}','${item.nama_kk.replace(/'/g,"\'")}',${item.iuran?`'${item.iuran.id}'`:'null'})">✏️</button></td>`:''}
-      <td style="white-space:nowrap;">${item.iuran&&item.iuran.status==='lunas'?`
-        <button class="btn btn-success btn-sm" onclick="showBuktiPembayaran('${item.id}','${item.iuran.id}')" title="Lihat Bukti">🧾</button>
-        ${isAdmin?`<button class="btn btn-success btn-sm" style="background:#25D366;margin-left:4px;" onclick="buktiKirimWA('${item.id}','${item.iuran.id}')" title="Kirim WA">📲</button>`:''}
-      `:''}</td>
-    </tr>`;
-  }).join('');
-}
-function filterIuran(q) {
-  let data = allIuranData;
-  if (filterBlokIuranAktif) data = data.filter(w => w.blok === filterBlokIuranAktif);
-  if (q) {
-    const lq = q.toLowerCase();
-    data = data.filter(w => w.nama_kk.toLowerCase().includes(lq) || w.blok.toLowerCase().includes(lq));
-  }
-  renderIuran(data);
-}
-
-function setFilterBlokIuran(blok, btn) {
-  filterBlokIuranAktif = blok;
-  document.querySelectorAll('#filter-blok-iuran .filter-chip').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  filterIuran(document.getElementById('search-iuran').value);
-}
-async function showModalIuran(wargaId, nama, iuranId) {
-  const bulanNamaArr = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  document.getElementById('modal-iuran-nama').textContent = nama;
-  document.getElementById('i-warga-id').value = wargaId;
-
-  // Isi dropdown tahun
-  const now = new Date();
-  const selTahun = document.getElementById('i-tahun-tagihan');
-  selTahun.innerHTML = '';
-  for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++)
-    selTahun.innerHTML += `<option value="${y}">${y}</option>`;
-
-  // Default bulan/tahun = filter layar
-  const bulanFilter = parseInt(document.getElementById('filter-bulan-iuran').value);
-  const tahunFilter = parseInt(document.getElementById('filter-tahun-iuran').value);
-  document.getElementById('i-bulan-tagihan').value = bulanFilter;
-  selTahun.value = tahunFilter;
-
-  // Query DB untuk bulan ini
-  await _isiFormIuranDariDB(wargaId, bulanFilter, tahunFilter);
-  openModal('modal-iuran');
-}
-
-// Dipanggil saat admin ubah dropdown bulan/tahun di dalam modal
-async function onUbahBulanIuran() {
-  const wargaId = document.getElementById('i-warga-id').value;
-  const bulan   = parseInt(document.getElementById('i-bulan-tagihan').value);
-  const tahun   = parseInt(document.getElementById('i-tahun-tagihan').value);
-  if (!wargaId || !bulan || !tahun) return;
-  await _isiFormIuranDariDB(wargaId, bulan, tahun);
-}
-
-// Auto-set nominal saat paket dipilih
-function onUbahKetIuran() {
-  const ket = document.getElementById('i-ket').value;
-  document.getElementById('i-nominal').value = parseInt(ket) || 50000;
-}
-
-// Helper: query DB dan isi form iuran sesuai data yang ada
-async function _isiFormIuranDariDB(wargaId, bulan, tahun) {
-  const { data: existing } = await db.from('iuran').select('*')
-    .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun).maybeSingle();
-
-  if (existing) {
-    document.getElementById('i-id').value     = existing.id;
-    document.getElementById('i-status').value = existing.status;
-    // Paksa nominal ke salah satu dari 3 pilihan paket
-    const nom = existing.nominal || 50000;
-    const paket = [50000,70000,20000].includes(nom) ? String(nom) : '50000';
-    document.getElementById('i-ket').value     = paket;
-    document.getElementById('i-nominal').value = parseInt(paket);
-  } else {
-    document.getElementById('i-id').value      = '';
-    document.getElementById('i-status').value  = 'lunas';
-    document.getElementById('i-ket').value     = '50000';
-    document.getElementById('i-nominal').value = 50000;
-  }
-}
-async function saveIuran(e) {
-  e.preventDefault();
-  const wargaId  = document.getElementById('i-warga-id').value;
-  const bulan    = parseInt(document.getElementById('i-bulan-tagihan').value);
-  const tahun    = parseInt(document.getElementById('i-tahun-tagihan').value);
-  const status   = document.getElementById('i-status').value;
-  const nominal  = parseInt(document.getElementById('i-nominal').value) || 50000;
-  const tglBayar = new Date().toISOString().slice(0,10);
-  const ket      = document.getElementById('i-ket').value;
-
-  // FIX: pakai upsert dengan onConflict warga_id+bulan+tahun
-  // → tidak perlu tahu apakah sudah ada atau belum, tidak akan pernah duplikat
-  const payload = { warga_id:wargaId, bulan, tahun, status, nominal, tgl_bayar:tglBayar, keterangan:ket };
-  const { error: upsertErr } = await db.from('iuran')
-    .upsert(payload, { onConflict: 'warga_id,bulan,tahun' });
-  if (upsertErr) { showToast('Gagal: '+upsertErr.message,'error'); return; }
-
-  // Ambil iuranId hasil upsert untuk bukti pembayaran
-  const { data: savedIuran } = await db.from('iuran').select('id')
-    .eq('warga_id', wargaId).eq('bulan', bulan).eq('tahun', tahun).single();
-  const finalIuranId = savedIuran ? savedIuran.id : null;
-
-  const warga     = allIuranData.find(w => w.id === wargaId);
-  const namaWarga = warga ? warga.nama_kk : wargaId;
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  const ketKas       = `Iuran ${bulanNama[bulan]} ${tahun} - ${namaWarga}`;
-  const ketAkomodasi = `Akomodasi warga - ${namaWarga} ${bulanNama[bulan]} ${tahun}`;
-  const blokWarga    = warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null;
-
-  const bulanPadded = String(bulan).padStart(2, '0');
-  const tglHari     = `${tahun}-${bulanPadded}-01`;
-  const bulanAwal   = tglHari;
-  const bulanAkhir  = `${tahun}-${bulanPadded}-31`;
-
-  // Hapus kas lama warga bulan ini sebelum insert baru
-  const { data: kasLamaMasuk } = await db.from('kas').select('id')
-    .eq('jenis','masuk').eq('kategori','iuran')
-    .eq('blok_warga', blokWarga)
-    .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
-  if (kasLamaMasuk?.length) for (const k of kasLamaMasuk) await db.from('kas').delete().eq('id', k.id);
-
-  const { data: kasLamaKeluar } = await db.from('kas').select('id')
-    .eq('jenis','keluar').eq('kategori','operasional')
-    .eq('blok_warga', blokWarga)
-    .gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
-  if (kasLamaKeluar?.length) for (const k of kasLamaKeluar) await db.from('kas').delete().eq('id', k.id);
-
-  if (status === 'lunas') {
-    // Hitung berdasarkan paket (nilai ket = nominal string)
-    const paket = ket; // '50000' | '70000' | '20000'
-    const nominalBayar = parseInt(paket) || nominal;
-
-    // Kas masuk = nominal yang dibayar warga
-    await db.from('kas').insert({
-      tanggal: tglHari, jenis:'masuk', nominal: nominalBayar, keterangan: ketKas,
-      kategori:'iuran', created_by:'auto', blok_warga: blokWarga
-    });
-
-    // Kas keluar akomodasi (kepotong) sesuai paket
-    let nominalPotong = 0;
-    if (paket === '50000') nominalPotong = 45000;
-    else if (paket === '70000') nominalPotong = 65000;
-    else if (paket === '20000') nominalPotong = 20000; // kepotong semua
-
-    if (nominalPotong > 0) {
-      await db.from('kas').insert({
-        tanggal: tglHari, jenis:'keluar', nominal: nominalPotong,
-        keterangan: ketAkomodasi, kategori:'operasional', created_by:'auto',
-        blok_warga: blokWarga
-      });
-    }
-  }
-
-  showToast('Status iuran disimpan!');
-  closeModal('modal-iuran');
-  document.getElementById('form-iuran').reset();
-  logAktivitas('Update Iuran', wargaId);
-  // FIX 3: simpan filterBlokIuranAktif sebelum reload agar tidak reset ke Semua
-  const blokSebelum = filterBlokIuranAktif;
-  await loadIuran();
-  // Pulihkan filter blok setelah reload
-  if (blokSebelum) {
-    const chips = document.querySelectorAll('#filter-blok-iuran .filter-chip');
-    chips.forEach(btn => {
-      const blokBtn = btn.textContent.replace('Blok ','').trim();
-      if (blokBtn === blokSebelum) { setFilterBlokIuran(blokSebelum, btn); }
-    });
-  }
-  loadDashboard(); loadKas();
-
-  // Otomatis tampilkan bukti pembayaran jika status lunas
-  if (status === 'lunas' && finalIuranId) showBuktiPembayaran(wargaId, finalIuranId);
-}
-async function generateIuranBulanan() {
-  const bulan=parseInt(document.getElementById('filter-bulan-iuran').value), tahun=parseInt(document.getElementById('filter-tahun-iuran').value);
-  const { data:wargaList }=await db.from('warga').select('id');
-  const { data:existing }=await db.from('iuran').select('warga_id').eq('bulan',bulan).eq('tahun',tahun);
-  const existingIds=new Set((existing||[]).map(i=>i.warga_id));
-  const toInsert=(wargaList||[]).filter(w=>!existingIds.has(w.id)).map(w=>({warga_id:w.id,bulan,tahun,status:'belum',nominal:50000}));
-  if (!toInsert.length) { showToast('Semua warga sudah ada data iuran bulan ini','info'); return; }
-  const { error }=await db.from('iuran').insert(toInsert);
-  if (error) { showToast('Gagal generate: '+error.message,'error'); return; }
-  showToast(`Generate ${toInsert.length} data iuran berhasil!`); loadIuran(); loadDashboard();
-}
-
-// ============================================================
-// KAS RT
-// ============================================================
-async function loadKas() {
-  // Ambil SEMUA data tanpa filter apapun
-  const { data, error } = await db.from('kas').select('*').order('tanggal', {ascending: false});
-  if (error) { showToast('Gagal memuat data kas','error'); return; }
-  allKasData = data || [];
-
-  // Isi dropdown tahun dari data yang ada (default = Semua Tahun)
-  const tahunEl = document.getElementById('filter-kas-tahun');
-  if (tahunEl) {
-    const years = [...new Set(allKasData.map(k => k.tanggal ? k.tanggal.slice(0,4) : null).filter(Boolean))].sort().reverse();
-    const selVal = tahunEl.value || '';
-    tahunEl.innerHTML = '<option value="">Semua Tahun</option>' +
-      years.map(y => `<option value="${y}" ${y===selVal?'selected':''}>${y}</option>`).join('');
-  }
-
-  // Summary dari SEMUA data (tidak terpengaruh filter)
-  const totalMasuk  = allKasData.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
-  const totalKeluar = allKasData.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
-  document.getElementById('kas-masuk-total').textContent = rp(totalMasuk);
-  document.getElementById('kas-keluar-total').textContent = rp(totalKeluar);
-  document.getElementById('kas-saldo').textContent = rp(totalMasuk - totalKeluar);
-
-  applyFilterKas();
-}
-
-function applyFilterKas() {
-  const jenis    = document.getElementById('filter-kas-jenis')?.value    || '';
-  const kategori = document.getElementById('filter-kas-kategori')?.value || '';
-  const bulan    = document.getElementById('filter-kas-bulan')?.value    || '';
-  const tahun    = document.getElementById('filter-kas-tahun')?.value    || '';
-
-  let filtered = allKasData;
-  if (jenis)    filtered = filtered.filter(k => k.jenis === jenis);
-  if (kategori) filtered = filtered.filter(k => k.kategori === kategori);
-  if (bulan)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(5,7) === bulan.padStart(2,'0'));
-  if (tahun)    filtered = filtered.filter(k => k.tanggal && k.tanggal.slice(0,4) === tahun);
-
-  const summaryEl = document.getElementById('kas-filter-summary');
-  if (summaryEl) {
-    const hasFilter = bulan || tahun;
-    summaryEl.style.display = hasFilter ? 'block' : 'none';
-    if (hasFilter) {
-      const totalMasuk  = filtered.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
-      const totalKeluar = filtered.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
-      const saldo       = totalMasuk - totalKeluar;
-      document.getElementById('summary-masuk').textContent  = rp(totalMasuk);
-      document.getElementById('summary-keluar').textContent = rp(totalKeluar);
-      const saldoEl = document.getElementById('summary-saldo');
-      saldoEl.textContent = rp(Math.abs(saldo));
-      saldoEl.style.color = saldo >= 0 ? '#1565C0' : '#C62828';
-
-      // FIX: hapus label lama sebelum insert baru agar tidak menumpuk
-      const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-        'Juli','Agustus','September','Oktober','November','Desember'];
-      const label = [bulan ? bulanNama[parseInt(bulan)] : '', tahun].filter(Boolean).join(' ');
-      const innerDiv = summaryEl.querySelector('div');
-      // Hapus semua elemen label lama (elemen pertama di innerDiv jika ada)
-      const labelLama = innerDiv.querySelector('.summary-label');
-      if (labelLama) labelLama.remove();
-      innerDiv.insertAdjacentHTML('afterbegin',
-        `<div class="summary-label" style="font-size:12px;font-weight:700;color:#1E293B;margin-bottom:8px;text-align:left;">
-          📅 Ringkasan: ${label}
-         </div>`);
-    }
-  }
-
-  renderKas(filtered);
-}
-
-function resetFilterKas() {
-  const els = ['filter-kas-jenis','filter-kas-kategori','filter-kas-bulan','filter-kas-tahun'];
-  els.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  // Sembunyikan summary saat reset
-  const summaryEl = document.getElementById('kas-filter-summary');
-  if (summaryEl) summaryEl.style.display = 'none';
-  renderKas(allKasData);
-}
-function renderKas(data) {
-  const isAdmin=currentUser==='admin', tbody=document.getElementById('tabel-kas');
-  if (!data||!data.length) { tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div>Belum ada transaksi</div></td></tr>'; return; }
-  tbody.innerHTML=data.map(k=>`
-    <tr>
-      <td style="font-size:12px;white-space:nowrap;">${fmtDate(k.tanggal)}</td>
-      <td>${k.keterangan}<br><span style="font-size:11px;color:#aaa;">${k.kategori}</span></td>
-      <td style="font-size:12px;color:#1565C0;font-weight:600;white-space:nowrap;">${k.blok_warga||'-'}</td>
-      <td><span class="badge ${k.jenis==='masuk'?'badge-success':'badge-danger'}">${k.jenis}</span></td>
-      <td style="white-space:nowrap;font-weight:600;color:${k.jenis==='masuk'?'#2E7D32':'#C62828'}">${rp(k.nominal)}</td>
-      ${isAdmin?`<td onclick="event.stopPropagation()"><div class="flex-row">
-        <button class="btn btn-warning btn-sm" onclick="showModalEditKas('${k.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteKas('${k.id}')">🗑️</button>
-      </div></td>`:''}
-    </tr>`).join('');
-}
-function showModalKas() {
-  editKasId=null; document.getElementById('modal-kas-title').textContent='Tambah Transaksi';
-  document.getElementById('form-kas').reset(); document.getElementById('k-id').value='';
-  document.getElementById('k-tanggal').value=new Date().toISOString().slice(0,10); openModal('modal-kas');
-}
-function showModalEditKas(id) {
-  const k=allKasData.find(k=>k.id===id); if(!k) return;
-  editKasId=id; document.getElementById('modal-kas-title').textContent='Edit Transaksi';
-  document.getElementById('k-id').value=id; document.getElementById('k-tanggal').value=k.tanggal;
-  document.getElementById('k-jenis').value=k.jenis; document.getElementById('k-nominal').value=k.nominal;
-  document.getElementById('k-ket').value=k.keterangan; document.getElementById('k-kategori').value=k.kategori||'lainnya';
-  openModal('modal-kas');
-}
-async function saveKas(e) {
-  e.preventDefault();
-  const id=document.getElementById('k-id').value;
-  const payload={ tanggal:document.getElementById('k-tanggal').value, jenis:document.getElementById('k-jenis').value, nominal:parseInt(document.getElementById('k-nominal').value), keterangan:document.getElementById('k-ket').value, kategori:document.getElementById('k-kategori').value };
-  let err;
-  if (id) { const r=await db.from('kas').update(payload).eq('id',id); err=r.error; }
-  else    { const r=await db.from('kas').insert(payload); err=r.error; }
-  if (err) { showToast('Gagal: '+err.message,'error'); return; }
-  showToast('Kas disimpan!'); closeModal('modal-kas'); document.getElementById('form-kas').reset();
-  logAktivitas(id?'Edit Kas':'Tambah Kas', payload.keterangan); loadKas(); loadDashboard();
-}
-async function deleteKas(id) {
-  if (!confirm('Hapus transaksi ini?')) return;
-  const { error }=await db.from('kas').delete().eq('id',id);
-  if (error) { showToast('Gagal hapus!','error'); return; }
-  showToast('Transaksi dihapus!'); logAktivitas('Hapus Kas',id); loadKas(); loadDashboard();
-}
-
-// Bersihkan kas duplikat: per warga+bulan+tahun, sisakan 1 masuk terbaru dan 1 keluar terbaru
-async function bersihkanDoubleKas() {
-  if (!confirm('Hapus semua transaksi kas yang duplikat? Proses ini tidak dapat dibatalkan.')) return;
-  showToast('Sedang membersihkan...', 'info');
-  const { data: semua } = await db.from('kas').select('*').order('created_at', {ascending:true});
-  if (!semua) return;
-
-  const seen = {};
-  const hapusIds = [];
-  for (const k of semua) {
-    const bln = k.tanggal ? k.tanggal.slice(0,7) : 'unknown';
-    const key = `${k.blok_warga}|${bln}|${k.jenis}|${k.kategori}`;
-    if (seen[key]) {
-      // Ini duplikat — tandai untuk dihapus (simpan yang terbaru, hapus yang lama)
-      hapusIds.push(seen[key]); // hapus yang sebelumnya
-      seen[key] = k.id;         // ganti dengan yang ini (lebih baru)
-    } else {
-      seen[key] = k.id;
-    }
-  }
-
-  if (!hapusIds.length) { showToast('Tidak ada duplikat ditemukan!', 'info'); return; }
-  for (const id of hapusIds) await db.from('kas').delete().eq('id', id);
-  showToast(`${hapusIds.length} transaksi duplikat berhasil dihapus!`);
-  loadKas(); loadDashboard();
-}
-function exportKasPDF() {
-  const { jsPDF }=window.jspdf, doc=new jsPDF();
-  const now = new Date();
-  const label = now.toLocaleDateString('id-ID', {month:'long', year:'numeric'});
-  doc.setFontSize(16); doc.text(`Laporan Kas RT — Semua Periode`,14,20);
-  doc.setFontSize(11); let y=35;
-  doc.text('Tanggal',14,y); doc.text('Keterangan',50,y); doc.text('Jenis',120,y); doc.text('Nominal',155,y);
-  y+=6; doc.line(14,y,196,y); y+=4;
-  allKasData.forEach(k=>{ if(y>270){doc.addPage();y=20;} doc.text(fmtDate(k.tanggal),14,y); doc.text(k.keterangan.substring(0,35),50,y); doc.text(k.jenis,120,y); doc.text(rp(k.nominal),155,y); y+=7; });
-  doc.save(`laporan-kas-rt-semua.pdf`); showToast('PDF berhasil diunduh!');
-}
-function exportKasExcel() {
-  const rows=allKasData.map(k=>({Tanggal:fmtDate(k.tanggal),Keterangan:k.keterangan,Kategori:k.kategori,Jenis:k.jenis,Nominal:k.nominal}));
-  const ws=XLSX.utils.json_to_sheet(rows), wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Kas RT'); XLSX.writeFile(wb,`laporan-kas-rt-semua.xlsx`);
-  showToast('Excel berhasil diunduh!');
-}
-
-// ============================================================
-// PROFIL & LOG
-// ============================================================
-async function loadProfil() {
-  const isAdmin=currentUser==='admin', el=document.getElementById('profil-content');
-  if (isAdmin) {
-    const { count:tw }=await db.from('warga').select('id',{count:'exact'});
-    const { count:tkas }=await db.from('kas').select('id',{count:'exact'});
-    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Role</span><b>👮 Administrator</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Total Warga</span><b>${tw}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Total Transaksi Kas</span><b>${tkas}</b></div>
-      <div style="padding:8px 0;border-bottom:1px solid #F0F0F0;">
-        <button class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;" onclick="showModalGantiPasswordAdmin()">🔑 Ganti Password Admin</button>
-      </div>
-      <div style="padding:8px 0;border-bottom:1px solid #F0F0F0;">
-        <button class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;color:#E53935;border-color:#E53935;" onclick="showModalResetPasswordWarga()">🔑 Reset Password Semua Warga</button>
-      </div>
-      <div style="padding:8px 0;">
-        <button class="btn btn-outline btn-sm" style="width:100%;margin-top:4px;color:#1976D2;border-color:#1976D2;" onclick="showModalDevice()">📱 Kelola Device Login</button>
-      </div>
-    </div>`;
-    loadLog();
-  } else {
-    const w=currentUser;
-    const passDisplay='•'.repeat((w.password||'123').length);
-    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Nama KK</span><b>${w.nama_kk}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Alamat</span><b>Blok ${w.blok}-${w.nomor_rumah}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Status</span><b>${w.status_hunian}</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>Anggota Keluarga</span><b>${w.jumlah_anggota} orang</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;"><span>No. HP</span><b>${w.no_hp||'-'}</b></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F0F0F0;">
-        <span>Password</span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <b id="profil-pass-display">${passDisplay}</b>
-          <button type="button" onclick="toggleProfilPass()" style="background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
-        </div>
-      </div>
-    </div>`;
-  }
-}
-function toggleProfilPass() {
-  const el = document.getElementById('profil-pass-display');
-  const pass = currentUser.password || '123';
-  el.textContent = el.textContent.includes('•') ? pass : '•'.repeat(pass.length);
-}
-async function loadLog() {
-  const { data }=await db.from('log_aktivitas').select('*').order('created_at',{ascending:false}).limit(30);
-  const el=document.getElementById('list-log');
-  if (!data||!data.length) { el.innerHTML='<div class="empty-state">Belum ada aktivitas</div>'; return; }
-  el.innerHTML=data.map(l=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;font-size:13px;"><div><b>${l.aksi}</b><br><span style="color:#aaa;">${l.detail||''}</span></div><div style="font-size:11px;color:#aaa;white-space:nowrap;margin-left:8px;">${fmtDate(l.created_at)}</div></div>`).join('');
-}
-async function clearLog() {
-  if (!confirm('Hapus semua log?')) return;
-  await db.from('log_aktivitas').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  showToast('Log dihapus!'); loadLog();
-}
-
-// ============================================================
-// INIT — restore session saat halaman pertama kali dibuka
-// ============================================================
-(async function init() {
-  // Cek apakah ada parameter ?bukti= di URL
-  const params = new URLSearchParams(window.location.search);
-  const buktiParam = params.get('bukti');
-  if (buktiParam) {
-    tampilkanHalamanBukti(buktiParam);
-    return;
-  }
-  const restored = await restoreSession();
-  if (restored) {
-    startApp();
-  }
-  // Jika tidak ada session, halaman login sudah tampil by default
-})();
-
-// ============================================================
-// GANTI PASSWORD
-// ============================================================
-function togglePass(inputId, btn) {
-  const input = document.getElementById(inputId);
-  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
-  else { input.type = 'password'; btn.textContent = '👁️'; }
-}
-
-function showModalGantiPasswordAdmin() {
-  const el = document.getElementById('ganti-pass-content');
-  el.innerHTML = `
-    <div class="form-group">
-      <label>Password Lama</label>
-      <div style="position:relative;">
-        <input type="password" id="gp-lama" placeholder="Password saat ini" style="width:100%;padding-right:44px;">
-        <button type="button" onclick="togglePass('gp-lama',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Password Baru</label>
-      <div style="position:relative;">
-        <input type="password" id="gp-baru" placeholder="Password baru" style="width:100%;padding-right:44px;">
-        <button type="button" onclick="togglePass('gp-baru',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Konfirmasi Password Baru</label>
-      <div style="position:relative;">
-        <input type="password" id="gp-konfirm" placeholder="Ulangi password baru" style="width:100%;padding-right:44px;">
-        <button type="button" onclick="togglePass('gp-konfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
-      </div>
-    </div>
-    <div class="flex-row">
-      <button class="btn btn-primary" onclick="simpanPasswordAdmin()">💾 Simpan</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-ganti-password')">Batal</button>
-    </div>`;
-  openModal('modal-ganti-password');
-}
-
-function simpanPasswordAdmin() {
-  const lama    = document.getElementById('gp-lama').value.trim();
-  const baru    = document.getElementById('gp-baru').value.trim();
-  const konfirm = document.getElementById('gp-konfirm').value.trim();
-  const passSkrg = localStorage.getItem('rt_admin_pass') || '111';
-  if (lama !== passSkrg) { showToast('Password lama salah!', 'error'); return; }
-  if (!baru) { showToast('Password baru tidak boleh kosong!', 'error'); return; }
-  if (baru !== konfirm) { showToast('Konfirmasi password tidak cocok!', 'error'); return; }
-  localStorage.setItem('rt_admin_pass', baru);
-  showToast('Password admin berhasil diubah!');
-  logAktivitas('Ganti Password Admin', '');
-  closeModal('modal-ganti-password');
-}
-
-
-// ============================================================
-// GANTI PASSWORD
-// ============================================================
-
-
-
-
-function showModalResetPasswordWarga() {
-  const el = document.getElementById('ganti-pass-content');
-  el.innerHTML = `
-    <p style="font-size:13px;color:#757575;margin-bottom:16px;">Semua password warga akan direset menjadi password baru yang kamu masukkan.</p>
-    <div class="form-group">
-      <label>Password Baru Semua Warga</label>
-      <div style="position:relative;">
-        <input type="password" id="rp-baru" placeholder="Password baru" style="width:100%;padding-right:44px;">
-        <button type="button" onclick="togglePass('rp-baru',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Konfirmasi Password Baru</label>
-      <div style="position:relative;">
-        <input type="password" id="rp-konfirm" placeholder="Ulangi password baru" style="width:100%;padding-right:44px;">
-        <button type="button" onclick="togglePass('rp-konfirm',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">👁️</button>
-      </div>
-    </div>
-    <div class="flex-row">
-      <button class="btn btn-danger" onclick="simpanResetPasswordWarga()">🔄 Reset Semua</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-ganti-password')">Batal</button>
-    </div>`;
-  openModal('modal-ganti-password');
-}
-
-async function simpanResetPasswordWarga() {
-  const baru    = document.getElementById('rp-baru').value.trim();
-  const konfirm = document.getElementById('rp-konfirm').value.trim();
-  if (!baru) { showToast('Password baru tidak boleh kosong!', 'error'); return; }
-  if (baru !== konfirm) { showToast('Konfirmasi password tidak cocok!', 'error'); return; }
-  if (!confirm('Reset password SEMUA warga menjadi "' + baru + '"?')) return;
-  const { error } = await db.from('warga').update({ password: baru }).neq('id','00000000-0000-0000-0000-000000000000');
-  if (error) { showToast('Gagal reset password: ' + error.message, 'error'); return; }
-  showToast('Password semua warga berhasil direset!');
-  logAktivitas('Reset Password Semua Warga', '');
-  closeModal('modal-ganti-password');
-}
-
-// ============================================================
-// GANTI PASSWORD
-// ============================================================
-
-
-
-// ============================================================
-// GANTI PASSWORD
-// ============================================================
-
-
-
-
-// ============================================================
-// BUKTI PEMBAYARAN
-// ============================================================
-let currentBuktiData = null;
-
-async function showBuktiPembayaran(wargaId, iuranId) {
-  const warga = allIuranData.find(w => w.id === wargaId);
-  if (!warga) return;
-  const { data: iuran } = await db.from('iuran').select('*').eq('id', iuranId).single();
-  if (!iuran) return;
-
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'];
-  const noBukti   = `RT03/${iuran.tahun}/${String(iuran.bulan).padStart(2,'0')}/${iuranId.slice(-6).toUpperCase()}`;
-  const tglBayar  = iuran.tgl_bayar
-    ? new Date(iuran.tgl_bayar).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})
-    : '-';
-  const nominal   = 'Rp ' + Number(iuran.nominal).toLocaleString('id-ID');
-  const bulanLabel= `${bulanNama[iuran.bulan]} ${iuran.tahun}`;
-
-  currentBuktiData = { warga, iuran, noBukti, tglBayar, nominal, bulanLabel };
-
-  document.getElementById('bukti-content').innerHTML = `
-    <div id="bukti-print" style="font-family:'Segoe UI',sans-serif;">
-
-      <!-- Header biru -->
-      <div style="background:linear-gradient(135deg,#1565C0,#1E88E5);border-radius:14px 14px 0 0;padding:22px 20px 18px;text-align:center;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,0.06);border-radius:50%;"></div>
-        <div style="font-size:16px;font-weight:800;color:white;line-height:1.3;">Bukti Pembayaran<br>Iuran Warga</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.75);margin-top:5px;">RT 03 RW 12 Villa Bintaro Asri</div>
-      </div>
-
-      <!-- Zigzag -->
-      <div style="height:12px;background:white;position:relative;">
-        <svg viewBox="0 0 400 12" preserveAspectRatio="none" style="position:absolute;top:-12px;left:0;right:0;width:100%;height:12px;">
-          <path d="M0,12 L10,0 L20,12 L30,0 L40,12 L50,0 L60,12 L70,0 L80,12 L90,0 L100,12 L110,0 L120,12 L130,0 L140,12 L150,0 L160,12 L170,0 L180,12 L190,0 L200,12 L210,0 L220,12 L230,0 L240,12 L250,0 L260,12 L270,0 L280,12 L290,0 L300,12 L310,0 L320,12 L330,0 L340,12 L350,0 L360,12 L370,0 L380,12 L390,0 L400,12 Z" fill="white"/>
-        </svg>
-      </div>
-
-      <!-- Body -->
-      <div style="background:white;padding:4px 20px 20px;">
-
-        <!-- No Bukti -->
-        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:11px;color:#64748B;font-weight:500;">No. Bukti</span>
-          <b style="font-size:12px;color:#1565C0;letter-spacing:0.5px;">${noBukti}</b>
-        </div>
-
-        <!-- Info rows -->
-        ${[
-          ['Nama Warga', warga.nama_kk],
-          ['No. Rumah',  `Blok ${warga.blok}-${warga.nomor_rumah}`],
-          ['Tanggal Bayar', tglBayar]
-        ].map(([label,val])=>`
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #F1F5F9;">
-          <span style="font-size:12px;color:#64748B;">${label}</span>
-          <b style="font-size:13px;color:#1E293B;">${val}</b>
-        </div>`).join('')}
-
-        <div style="border-top:2px dashed #E2E8F0;margin:14px 0;"></div>
-
-        <!-- Tabel iuran -->
-        <table style="width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid #E2E8F0;margin-bottom:14px;">
-          <thead>
-            <tr style="background:#EFF6FF;">
-              <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:0.5px;">Bulan</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:0.5px;">Nominal</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="padding:10px 12px;font-size:13px;color:#334155;border-top:1px solid #F1F5F9;">${bulanLabel}</td>
-              <td style="padding:10px 12px;font-size:13px;color:#334155;text-align:right;border-top:1px solid #F1F5F9;">${nominal}</td>
-            </tr>
-            <tr style="background:#F8FAFC;">
-              <td style="padding:10px 12px;font-size:13px;font-weight:800;color:#1E293B;border-top:2px solid #E2E8F0;">Total</td>
-              <td style="padding:10px 12px;font-size:13px;font-weight:800;color:#1E293B;text-align:right;border-top:2px solid #E2E8F0;">${nominal}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Status -->
-        <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px;text-align:center;margin-bottom:14px;">
-          <span style="font-size:14px;font-weight:800;color:#15803D;">✅ Pembayaran Diterima</span>
-        </div>
-
-        <!-- Penerima -->
-        <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed #E2E8F0;border-bottom:1px dashed #E2E8F0;margin-bottom:14px;">
-          <span style="font-size:12px;color:#64748B;">Diterima oleh</span>
-          <b style="font-size:13px;color:#1E293B;">Bendahara RT 03</b>
-        </div>
-
-        <!-- Footer -->
-        <div style="text-align:center;">
-          <p style="font-size:11px;color:#94A3B8;line-height:1.7;">Terima kasih atas partisipasi Anda dalam iuran bulanan warga.<br>Simpan bukti ini sebagai arsip pribadi.</p>
-          <p style="font-size:11px;font-weight:700;font-style:italic;color:#1565C0;line-height:1.6;margin-top:6px;">Mari kita ciptakan lingkungan Villa Bintaro Asri<br>yang aman, nyaman, tenteram, dan harmonis 🤝</p>
-        </div>
-
-      </div>
-
-      <!-- Zigzag bawah -->
-      <div style="height:12px;background:white;position:relative;">
-        <svg viewBox="0 0 400 12" preserveAspectRatio="none" style="position:absolute;bottom:0;left:0;right:0;width:100%;height:12px;">
-          <path d="M0,0 L10,12 L20,0 L30,12 L40,0 L50,12 L60,0 L70,12 L80,0 L90,12 L100,0 L110,12 L120,0 L130,12 L140,0 L150,12 L160,0 L170,12 L180,0 L190,12 L200,0 L210,12 L220,0 L230,12 L240,0 L250,12 L260,0 L270,12 L280,0 L290,12 L300,0 L310,12 L320,0 L330,12 L340,0 L350,12 L360,0 L370,12 L380,0 L390,12 L400,0 Z" fill="white"/>
-        </svg>
-      </div>
-
-    </div>`;
-
-  openModal('modal-bukti');
-}
-
-function downloadBuktiPDF() {
-  if (!currentBuktiData) return;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a5', orientation:'portrait' });
-  const { warga, iuran, noBukti, tglBayar, nominal, bulanLabel } = currentBuktiData;
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'];
-
-  const W = 148, mx = 15;
-  let y = 18;
-
-  // Header
-  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(21,101,192);
-  doc.text('Bukti Pembayaran Iuran Warga', W/2, y, {align:'center'}); y += 7;
-  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
-  doc.text('RT 03 RW 12 Villa Bintaro Asri', W/2, y, {align:'center'}); y += 5;
-  doc.setDrawColor(21,101,192); doc.setLineWidth(0.5); doc.line(mx, y, W-mx, y); y += 7;
-
-  // Info warga
-  doc.setTextColor(0,0,0); doc.setFontSize(10);
-  const rows = [
-    ['No. Bukti', noBukti],
-    ['Nama Warga', warga.nama_kk],
-    ['No. Rumah', `Blok ${warga.blok}-${warga.nomor_rumah}`],
-    ['Tanggal Bayar', tglBayar],
-  ];
-  rows.forEach(([label, val]) => {
-    doc.setFont('helvetica','normal'); doc.text(label, mx, y);
-    doc.setFont('helvetica','bold');   doc.text(val, W-mx, y, {align:'right'});
-    y += 7;
-  });
-  y += 3;
-
-  // Tabel
-  doc.setFillColor(227,242,253); doc.rect(mx, y, W-mx*2, 8, 'F');
-  doc.setFont('helvetica','bold'); doc.setTextColor(21,101,192); doc.setFontSize(10);
-  doc.text('Bulan', mx+3, y+5.5);
-  doc.text('Nominal', W-mx-3, y+5.5, {align:'right'}); y += 8;
-  doc.setTextColor(0,0,0); doc.setFont('helvetica','normal');
-  doc.text(bulanLabel, mx+3, y+5.5);
-  doc.text(nominal, W-mx-3, y+5.5, {align:'right'});
-  doc.setDrawColor(200,200,200); doc.line(mx, y+8, W-mx, y+8); y += 8;
-  doc.setFillColor(245,245,245); doc.rect(mx, y, W-mx*2, 8, 'F');
-  doc.setFont('helvetica','bold');
-  doc.text('Total', mx+3, y+5.5);
-  doc.text(nominal, W-mx-3, y+5.5, {align:'right'}); y += 14;
-
-  // Status
-  doc.setTextColor(46,125,50); doc.setFontSize(11); doc.setFont('helvetica','bold');
-  doc.text('✓ Pembayaran Diterima', W/2, y, {align:'center'}); y += 10;
-
-  // Penerima
-  doc.setTextColor(0,0,0); doc.setFontSize(10); doc.setFont('helvetica','normal');
-  doc.text('Diterima oleh', mx, y);
-  doc.setFont('helvetica','bold'); doc.text('Bendahara RT 03', W-mx, y, {align:'right'}); y += 10;
-  doc.setDrawColor(220,220,220); doc.line(mx, y, W-mx, y); y += 8;
-
-  // Footer
-  doc.setFontSize(8); doc.setTextColor(100,100,100); doc.setFont('helvetica','normal');
-  doc.text('Terima kasih atas partisipasi Anda dalam iuran bulanan warga.', W/2, y, {align:'center'}); y += 5;
-  doc.text('Simpan bukti ini sebagai arsip pribadi.', W/2, y, {align:'center'}); y += 7;
-  doc.setTextColor(21,101,192); doc.setFont('helvetica','bolditalic');
-  doc.text('Mari kita ciptakan lingkungan Villa Bintaro Asri', W/2, y, {align:'center'}); y += 5;
-  doc.text('yang aman, nyaman, tenteram, dan harmonis', W/2, y, {align:'center'});
-
-  doc.save(`bukti-iuran-${warga.blok}${warga.nomor_rumah}-${bulanLabel.replace(' ','-')}.pdf`);
-  showToast('PDF berhasil diunduh!');
-}
-
-
-
-// ============================================================
-// KIRIM BUKTI VIA WA
-// ============================================================
-async function buktiKirimWA(wargaId, iuranId) {
-  const warga = allIuranData.find(w => w.id === wargaId);
-  if (!warga) { showToast('Data warga tidak ditemukan!', 'error'); return; }
-  if (!warga.no_hp) { showToast('Nomor HP warga belum diisi! Lengkapi di menu Warga.', 'error'); return; }
-  const { data: iuran, error } = await db.from('iuran').select('*').eq('id', iuranId).single();
-  if (error || !iuran) { showToast('Data iuran tidak ditemukan!', 'error'); return; }
-  const pesan = buatPesanWA(warga, iuran);
-  kirimWAWarga(warga.no_hp, pesan);
-}
-
-// ============================================================
-// HALAMAN BUKTI STANDALONE (?bukti=xxx)
-// ============================================================
-function tampilkanHalamanBukti(encoded) {
-  try {
-    // Decode base64 dengan cara yang kompatibel semua browser
-    let jsonStr;
-    try {
-      jsonStr = decodeURIComponent(atob(encoded).split('').map(c =>
-        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-    } catch(e2) {
-      jsonStr = atob(encoded);
-    }
-    const data = JSON.parse(jsonStr);
-    const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-      'Juli','Agustus','September','Oktober','November','Desember'];
-    const idxBulan  = bulanNama.indexOf(data.bulan);
-    const noBukti   = `RT03/${data.tahun}/${String(idxBulan).padStart(2,'0')}/${data.id.slice(-6).toUpperCase()}`;
-    const tglBayar  = data.tgl
-      ? new Date(data.tgl).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})
-      : '-';
-    const nominal   = 'Rp ' + Number(data.nominal).toLocaleString('id-ID');
-    const bulanLabel= `${data.bulan} ${data.tahun}`;
-
-    document.getElementById('login-screen').style.display = 'none';
-    document.body.style.cssText = 'background:#E8EDF5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;font-family:Segoe UI,sans-serif;';
-
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'width:100%;max-width:400px;';
-    wrapper.innerHTML = `
-      <div style="text-align:center;font-size:11px;font-weight:600;color:#94A3B8;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Bukti Pembayaran</div>
-      <div style="background:white;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);">
-        <div style="background:linear-gradient(135deg,#1565C0,#1E88E5);padding:24px 20px 20px;text-align:center;">
-          <div style="font-size:18px;font-weight:800;color:white;line-height:1.3;">Bukti Pembayaran<br>Iuran Warga</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:6px;">RT 03 RW 12 Villa Bintaro Asri</div>
-        </div>
-        <div style="height:12px;background:white;position:relative;">
-          <svg viewBox="0 0 400 12" preserveAspectRatio="none" style="position:absolute;top:-12px;left:0;width:100%;height:12px;">
-            <path d="M0,12 L10,0 L20,12 L30,0 L40,12 L50,0 L60,12 L70,0 L80,12 L90,0 L100,12 L110,0 L120,12 L130,0 L140,12 L150,0 L160,12 L170,0 L180,12 L190,0 L200,12 L210,0 L220,12 L230,0 L240,12 L250,0 L260,12 L270,0 L280,12 L290,0 L300,12 L310,0 L320,12 L330,0 L340,12 L350,0 L360,12 L370,0 L380,12 L390,0 L400,12 Z" fill="white"/>
-          </svg>
-        </div>
-        <div style="background:white;padding:4px 20px 20px;">
-          <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:8px 12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:11px;color:#64748B;">No. Bukti</span>
-            <b style="font-size:12px;color:#1565C0;">${noBukti}</b>
-          </div>
-          ${[['Nama Warga',data.nama],['No. Rumah',`Blok ${data.blok}-${data.nomor}`],['Tanggal Bayar',tglBayar]].map(([l,v])=>`
-          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #F1F5F9;">
-            <span style="font-size:12px;color:#64748B;">${l}</span>
-            <b style="font-size:13px;color:#1E293B;">${v}</b>
-          </div>`).join('')}
-          <div style="border-top:2px dashed #E2E8F0;margin:14px 0;"></div>
-          <table style="width:100%;border-collapse:collapse;border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;margin-bottom:14px;">
-            <thead><tr style="background:#EFF6FF;">
-              <th style="padding:8px 12px;text-align:left;font-size:11px;color:#1565C0;">BULAN</th>
-              <th style="padding:8px 12px;text-align:right;font-size:11px;color:#1565C0;">NOMINAL</th>
-            </tr></thead>
-            <tbody>
-              <tr><td style="padding:10px 12px;font-size:13px;">${bulanLabel}</td><td style="padding:10px 12px;text-align:right;font-size:13px;">${nominal}</td></tr>
-              <tr style="background:#F8FAFC;"><td style="padding:10px 12px;font-weight:800;font-size:13px;border-top:2px solid #E2E8F0;">Total</td><td style="padding:10px 12px;text-align:right;font-weight:800;font-size:13px;border-top:2px solid #E2E8F0;">${nominal}</td></tr>
-            </tbody>
-          </table>
-          <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px;text-align:center;margin-bottom:14px;">
-            <span style="font-size:14px;font-weight:800;color:#15803D;">✅ Pembayaran Diterima</span>
-            ${data.keterangan==='cicil'?'<div style="margin-top:6px;"><span style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #FDE68A;">💳 CICIL</span></div>':''}
-            ${data.keterangan==='akomodasi'?'<div style="margin-top:6px;"><span style="background:#EFF6FF;color:#1565C0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #BFDBFE;">🏠 AKOMODASI</span></div>':''}
-          </div>
-          <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px dashed #E2E8F0;border-bottom:1px dashed #E2E8F0;margin-bottom:14px;">
-            <span style="font-size:12px;color:#64748B;">Diterima oleh</span>
-            <b style="font-size:13px;">Bendahara RT 03</b>
-          </div>
-          <div style="text-align:center;">
-            <p style="font-size:11px;color:#94A3B8;line-height:1.7;">Terima kasih atas kepercayaan dan partisipasi aktif Bapak/Ibu.<br>Bersama kita wujudkan lingkungan Villa Bintaro Asri<br>yang nyaman dan harmonis 🤝</p>
-          </div>
-        </div>
-        <div style="height:12px;background:white;position:relative;">
-          <svg viewBox="0 0 400 12" preserveAspectRatio="none" style="position:absolute;bottom:0;left:0;width:100%;height:12px;">
-            <path d="M0,0 L10,12 L20,0 L30,12 L40,0 L50,12 L60,0 L70,12 L80,0 L90,12 L100,0 L110,12 L120,0 L130,12 L140,0 L150,12 L160,0 L170,12 L180,0 L190,12 L200,0 L210,12 L220,0 L230,12 L240,0 L250,12 L260,0 L270,12 L280,0 L290,12 L300,0 L310,12 L320,0 L330,12 L340,0 L350,12 L360,0 L370,12 L380,0 L390,12 L400,0 Z" fill="white"/>
-          </svg>
-        </div>
-      </div>
-      <div style="margin-top:16px;text-align:center;">
-        <button onclick="window.print()" style="background:#1565C0;color:white;border:none;padding:12px 32px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">🖨️ Simpan / Print</button>
-      </div>`;
-    document.body.appendChild(wrapper);
-  } catch(e) {
-    document.body.innerHTML = '<div style="text-align:center;padding:40px;font-family:sans-serif;color:#E53935;">Link bukti tidak valid.</div>';
-  }
-}
-
-// ============================================================
-// ANGGOTA KELUARGA
-// ============================================================
-let currentWargaAnggota = null;
-
-async function showAnggotaKeluarga(wargaId, namaKK) {
-  currentWargaAnggota = { id: wargaId, nama: namaKK };
-  const isAdmin = currentUser === 'admin';
-  document.getElementById('modal-anggota-judul').textContent = '👨‍👩‍👧‍👦 ' + namaKK;
-  const el = document.getElementById('modal-anggota-content');
-  el.innerHTML = '<div class="loading">Memuat...</div>';
-  openModal('modal-anggota');
-
-  const { data, error } = await db.from('anggota_keluarga')
-    .select('*').eq('warga_id', wargaId).order('created_at');
-
-  if (error) { el.innerHTML = '<div class="empty-state">Gagal memuat data</div>'; return; }
-
-  if (!data || !data.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div>Belum ada data anggota keluarga</div>';
-    return;
-  }
-
-  const hubunganIcon = { 'Kepala Keluarga':'👨', 'Istri':'👩', 'Anak':'👧', 'Orang Tua':'👴', 'Saudara':'👫', 'Lainnya':'👤' };
-
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      ${data.map((a,idx) => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#F8FAFC;border-radius:10px;border-left:3px solid #1976D2;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:20px;">${hubunganIcon[a.hubungan]||'👤'}</span>
-            <div>
-              <div style="font-weight:700;font-size:14px;">${a.nama}</div>
-              <div style="font-size:11px;color:#64748B;">${a.hubungan}</div>
-            </div>
-          </div>
-          ${isAdmin ? `
-          <div class="flex-row">
-            <button class="btn btn-warning btn-sm" onclick="showFormAnggota('${a.id}','${wargaId}')">✏️</button>
-            <button class="btn btn-danger btn-sm" onclick="hapusAnggota('${a.id}','${wargaId}')">🗑️</button>
-          </div>` : ''}
-        </div>`).join('')}
-    </div>`;
-}
-
-function showFormAnggota(anggotaId, wargaId) {
-  document.getElementById('a-warga-id').value = wargaId;
-  document.getElementById('a-id').value = anggotaId || '';
-  if (anggotaId) {
-    // Edit — ambil data dari DOM
-    document.getElementById('modal-form-anggota-title').textContent = 'Edit Anggota';
-    const el = document.getElementById('modal-anggota-content');
-    // Cari data dari Supabase
-    db.from('anggota_keluarga').select('*').eq('id', anggotaId).single().then(({data}) => {
-      if (data) {
-        document.getElementById('a-nama').value = data.nama;
-        document.getElementById('a-hubungan').value = data.hubungan;
-      }
-    });
-  } else {
-    document.getElementById('modal-form-anggota-title').textContent = 'Tambah Anggota';
-    document.getElementById('form-anggota').reset();
-    document.getElementById('a-warga-id').value = wargaId;
-  }
-  openModal('modal-form-anggota');
-}
-
-async function saveAnggota(e) {
-  e.preventDefault();
-  const id      = document.getElementById('a-id').value;
-  const wargaId = document.getElementById('a-warga-id').value;
-  const payload = {
-    warga_id : wargaId,
-    nama     : document.getElementById('a-nama').value.trim(),
-    hubungan : document.getElementById('a-hubungan').value
-  };
-
-  let err;
-  if (id) { const r = await db.from('anggota_keluarga').update(payload).eq('id', id); err = r.error; }
-  else     { const r = await db.from('anggota_keluarga').insert(payload); err = r.error; }
-  if (err) { showToast('Gagal menyimpan: ' + err.message, 'error'); return; }
-
-  // Sync jumlah_anggota di tabel warga
-  await syncJumlahAnggota(wargaId);
-
-  showToast(id ? 'Anggota diperbarui!' : 'Anggota ditambahkan!');
-  closeModal('modal-form-anggota');
-  logAktivitas(id ? 'Edit Anggota' : 'Tambah Anggota', payload.nama);
-
-  // Refresh modal anggota
-  const namaKK = currentWargaAnggota ? currentWargaAnggota.nama : '';
-  await showAnggotaKeluarga(wargaId, namaKK);
-  loadWarga();
-}
-
-async function hapusAnggota(anggotaId, wargaId) {
-  if (!confirm('Hapus anggota keluarga ini?')) return;
-  const { error } = await db.from('anggota_keluarga').delete().eq('id', anggotaId);
-  if (error) { showToast('Gagal hapus: ' + error.message, 'error'); return; }
-
-  await syncJumlahAnggota(wargaId);
-  showToast('Anggota dihapus!');
-  logAktivitas('Hapus Anggota', anggotaId);
-
-  const namaKK = currentWargaAnggota ? currentWargaAnggota.nama : '';
-  await showAnggotaKeluarga(wargaId, namaKK);
-  loadWarga();
-}
-
-async function syncJumlahAnggota(wargaId) {
-  const { count } = await db.from('anggota_keluarga')
-    .select('id', { count: 'exact' }).eq('warga_id', wargaId);
-  await db.from('warga').update({ jumlah_anggota: count || 0 }).eq('id', wargaId);
-}
-
-
-
-// ============================================================
-// GENERATE KOLOM ANGGOTA DINAMIS
-// ============================================================
-function generateKolomAnggota(jumlah, existingData=[]) {
-  const n   = parseInt(jumlah) || 1;
-  const el  = document.getElementById('w-anggota-list');
-  if (!el) return;
-  const hubOptions = ['Kepala Keluarga','Istri','Anak','Orang Tua','Saudara','Lainnya'];
-
-  el.innerHTML = '';
-  for (let i = 0; i < n; i++) {
-    const existing = existingData[i] || {};
-    const nama = existing.nama || '';
-    const hub  = existing.hubungan || (i===0 ? 'Kepala Keluarga' : 'Anak');
-    const optHtml = hubOptions.map(o =>
-      `<option value="${o}" ${hub===o?'selected':''}>${o}</option>`).join('');
-    const row = document.createElement('div');
-    row.className = 'anggota-row';
-    row.style.cssText = 'display:flex;gap:8px;align-items:center;background:#F8FAFC;padding:8px 10px;border-radius:8px;border-left:3px solid #1976D2;';
-    row.innerHTML = `
-      <span style="font-size:12px;color:#64748B;min-width:20px;font-weight:600;">${i+1}.</span>
-      <input type="text" class="a-nama-input" placeholder="Nama anggota ke-${i+1}"
-        value="${nama}"
-        style="flex:1;padding:8px 10px;border:1.5px solid #E0E0E0;border-radius:6px;font-size:13px;">
-      <select class="a-hub-input"
-        style="width:130px;padding:8px 6px;border:1.5px solid #E0E0E0;border-radius:6px;font-size:12px;">
-        ${optHtml}
-      </select>`;
-    el.appendChild(row);
-  }
-}
-
-
-
-// ============================================================
-// DEVICE SESSION MANAGEMENT
-// ============================================================
-function getDeviceId() {
-  let did = localStorage.getItem('rt_device_id');
-  if (!did) {
-    // Generate device ID unik berdasarkan fingerprint + random
-    const fp = [
-      navigator.userAgent,
-      navigator.language,
-      screen.width + 'x' + screen.height,
-      new Date().getTimezoneOffset()
-    ].join('|');
-    did = btoa(fp).slice(0, 20) + '-' + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem('rt_device_id', did);
-  }
-  return did;
-}
-
-function getDeviceInfo() {
-  const ua = navigator.userAgent;
-  let os = 'Unknown OS';
-  let browser = 'Unknown Browser';
-
-  if (/Android/.test(ua))        os = 'Android';
-  else if (/iPhone|iPad/.test(ua)) os = 'iOS';
-  else if (/Windows/.test(ua))   os = 'Windows';
-  else if (/Mac/.test(ua))       os = 'MacOS';
-  else if (/Linux/.test(ua))     os = 'Linux';
-
-  if (/Chrome/.test(ua) && !/Edg/.test(ua)) browser = 'Chrome';
-  else if (/Firefox/.test(ua))   browser = 'Firefox';
-  else if (/Safari/.test(ua))    browser = 'Safari';
-  else if (/Edg/.test(ua))       browser = 'Edge';
-
-  return `${browser} / ${os}`;
-}
-
-async function registerDeviceSession() {
-  const deviceId   = getDeviceId();
-  const deviceInfo = getDeviceInfo();
-  const now        = new Date().toISOString();
-
-  // Cek apakah device sudah terdaftar
-  const { data: existing } = await db.from('admin_sessions')
-    .select('id').eq('device_id', deviceId).limit(1);
-
-  if (!existing || existing.length === 0) {
-    await db.from('admin_sessions').insert({
-      device_id   : deviceId,
-      device_info : deviceInfo,
-      created_at  : now,
-      last_active : now
-    });
-  } else {
-    await db.from('admin_sessions').update({ last_active: now })
-      .eq('device_id', deviceId);
-  }
-}
-
-async function showModalDevice() {
-  openModal('modal-device');
-  const el = document.getElementById('modal-device-content');
-  el.innerHTML = '<div class="loading">Memuat...</div>';
-
-  const { data, error } = await db.from('admin_sessions')
-    .select('*').order('last_active', { ascending: false });
-
-  if (error || !data || !data.length) {
-    el.innerHTML = '<div class="empty-state">Belum ada data device</div>';
-    return;
-  }
-
-  const myDeviceId = getDeviceId();
-  const fmtTime = (ts) => ts ? new Date(ts).toLocaleString('id-ID', {
-    day:'2-digit', month:'short', year:'numeric',
-    hour:'2-digit', minute:'2-digit'
-  }) : '-';
-
-  el.innerHTML = `
-    <p style="font-size:12px;color:#64748B;margin-bottom:12px;">
-      Device yang pernah login sebagai Admin. Kamu bisa logout paksa device tertentu.
-    </p>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      ${data.map(d => {
-        const isMe = d.device_id === myDeviceId;
-        return `
-        <div style="background:${isMe?'#EFF6FF':'#F8FAFC'};border:1.5px solid ${isMe?'#1976D2':'#E2E8F0'};border-radius:10px;padding:12px 14px;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div>
-              <div style="font-size:13px;font-weight:700;color:#1E293B;">
-                📱 ${d.device_info || 'Unknown Device'}
-                ${isMe ? '<span style="background:#1976D2;color:white;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;">Ini kamu</span>' : ''}
-              </div>
-              <div style="font-size:11px;color:#64748B;margin-top:3px;">ID: ${d.device_id.slice(0,16)}...</div>
-              <div style="font-size:11px;color:#64748B;">Login: ${fmtTime(d.created_at)}</div>
-              <div style="font-size:11px;color:#64748B;">Aktif: ${fmtTime(d.last_active)}</div>
-            </div>
-            ${!isMe ? `
-            <button class="btn btn-danger btn-sm" style="white-space:nowrap;margin-left:8px;"
-              onclick="logoutDevice('${d.id}','${d.device_info||'Device ini'}')">
-              🔒 Logout
-            </button>` : '<span style="font-size:11px;color:#1976D2;font-weight:600;">Aktif</span>'}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
-}
-
-async function logoutDevice(sessionId, deviceInfo) {
-  if (!confirm(`Logout paksa "${deviceInfo}"?\nDevice tersebut akan otomatis keluar saat membuka app.`)) return;
-  const { error } = await db.from('admin_sessions').delete().eq('id', sessionId);
-  if (error) { showToast('Gagal logout device: ' + error.message, 'error'); return; }
-  showToast('Device berhasil di-logout!');
-  logAktivitas('Logout Device', deviceInfo);
-  showModalDevice(); // Refresh list
-}
-
-
-
-// ============================================================
-// SINKRONISASI BLOK KAS
-// ============================================================
-async function sinkronBlokKas() {
-  showToast('Sinkronisasi dimulai...', 'info');
-  const { data: kasList } = await db.from('kas').select('id,keterangan')
-    .is('blok_warga', null).eq('kategori','iuran');
-  const { data: kasAkomo } = await db.from('kas').select('id,keterangan')
-    .is('blok_warga', null).eq('kategori','operasional');
-  const allKasLama = [...(kasList||[]), ...(kasAkomo||[])];
-  if (!allKasLama.length) { showToast('Semua data sudah tersinkron!', 'info'); return; }
-  const { data: wargaList } = await db.from('warga').select('id,nama_kk,blok,nomor_rumah');
-  if (!wargaList) return;
-  let updated = 0;
-  for (const kas of allKasLama) {
-    let namaWarga = null;
-    const matchIuran = kas.keterangan.match(/Iuran .+ - (.+)$/);
-    const matchAkomo = kas.keterangan.match(/Akomodasi warga - (.+?) \w+ \d{4}$/);
-    if (matchIuran) namaWarga = matchIuran[1].trim();
-    else if (matchAkomo) namaWarga = matchAkomo[1].trim();
-    if (namaWarga) {
-      const warga = wargaList.find(w => w.nama_kk.toLowerCase() === namaWarga.toLowerCase());
-      if (warga) {
-        await db.from('kas').update({ blok_warga: `Blok ${warga.blok}-${warga.nomor_rumah}` }).eq('id', kas.id);
-        updated++;
-      }
-    }
-  }
-  showToast(`Sinkronisasi selesai! ${updated} data diperbarui.`);
-  loadKas();
-}
-
-async function sinkronKasWarga(wargaId, namaKK, blok, nomorRumah) {
-  // FIX: Filter kas by blok_warga (unik per rumah) bukan by nama warga di keterangan
-  // Ini agar jika nama warga diedit (Riyo -> Rio), semua kas lama tetap tersinkron dengan benar
-  const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'];
-  const blokWarga = `Blok ${blok}-${nomorRumah}`;
-  const { data: iuranList } = await db.from('iuran').select('bulan,tahun').eq('warga_id', wargaId);
-  if (!iuranList || !iuranList.length) return;
-  for (const iuran of iuranList) {
-    const bulanStr    = bulanNama[iuran.bulan];
-    const tahun       = iuran.tahun;
-    const bulanPadded = String(iuran.bulan).padStart(2,'0');
-    const tglAwal     = `${tahun}-${bulanPadded}-01`;
-    const tglAkhir    = `${tahun}-${bulanPadded}-31`;
-    // Query by blok_warga + tanggal + kategori — tidak bergantung pada nama di keterangan
-    const { data: kasIuran } = await db.from('kas').select('id')
-      .eq('kategori','iuran').eq('jenis','masuk').eq('blok_warga', blokWarga)
-      .gte('tanggal', tglAwal).lte('tanggal', tglAkhir);
-    for (const k of (kasIuran||[])) {
-      await db.from('kas').update({
-        keterangan: `Iuran ${bulanStr} ${tahun} - ${namaKK}`,
-        blok_warga: blokWarga
-      }).eq('id', k.id);
-    }
-    const { data: kasAkomo } = await db.from('kas').select('id')
-      .eq('kategori','operasional').eq('jenis','keluar').eq('blok_warga', blokWarga)
-      .gte('tanggal', tglAwal).lte('tanggal', tglAkhir);
-    for (const k of (kasAkomo||[])) {
-      await db.from('kas').update({
-        keterangan: `Akomodasi warga - ${namaKK} ${bulanStr} ${tahun}`,
-        blok_warga: blokWarga
-      }).eq('id', k.id);
-    }
-  }
-}
-
-async function sinkronSemuaWarga() {
-  if (!confirm('Sinkronkan semua data kas dengan data warga terkini?')) return;
-  showToast('Sinkronisasi dimulai...', 'info');
-  const { data: wargaList } = await db.from('warga').select('id,nama_kk,blok,nomor_rumah');
-  if (!wargaList || !wargaList.length) { showToast('Tidak ada data warga', 'error'); return; }
-  for (const w of wargaList) {
-    await sinkronKasWarga(w.id, w.nama_kk, w.blok, w.nomor_rumah);
-  }
-  showToast(`Sinkronisasi selesai!`);
-  logAktivitas('Sinkron Data Warga-Kas', `${wargaList.length} warga`);
-  loadKas();
-}
-
-
-
-// ============================================================
-// FILTER & BERSIHKAN KAS
-// ============================================================
-async function bersihkanDoubleKas() {
-  if (!confirm('Hapus entri kas yang double/duplikat?\nHanya data auto (iuran) yang dibersihkan.\nData input manual TIDAK akan dihapus.')) return;
-  showToast('Membersihkan data double...', 'info');
-
-  // Hanya bersihkan data auto (dari iuran) — data manual dibiarkan
-  const { data: allKas } = await db.from('kas').select('id,keterangan,kategori,jenis,tanggal,created_by')
-    .eq('created_by','auto').order('tanggal', { ascending: false });
-  if (!allKas || !allKas.length) { showToast('Tidak ada data double ✅', 'info'); return; }
-
-  const groups = {};
-  for (const k of allKas) {
-    const key = `${k.keterangan}|${k.kategori}|${k.jenis}`;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(k);
-  }
-  let deleted = 0;
-  for (const key of Object.keys(groups)) {
-    const items = groups[key];
-    if (items.length > 1) {
-      for (const item of items.slice(1)) {
-        await db.from('kas').delete().eq('id', item.id);
-        deleted++;
-      }
-    }
-  }
-  if (deleted > 0) {
-    showToast(`${deleted} entri double berhasil dihapus!`);
-    logAktivitas('Bersihkan Double Kas', `${deleted} entri`);
-  } else {
-    showToast('Tidak ada data double ✅', 'info');
-  }
-  loadKas(); loadDashboard();
-}
-
-</script>
-
 
 <div class="overlay" id="modal-ganti-password">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Ganti Password</span>
-      <button class="modal-close" onclick="closeModal('modal-ganti-password')">✕</button>
-    </div>
+    <div class="modal-header"><span class="modal-title">Ganti Password</span><button class="modal-close" data-close="modal-ganti-password">✕</button></div>
     <div id="ganti-pass-content"></div>
   </div>
 </div>
 
-
 <div class="overlay" id="modal-bukti">
   <div class="modal" style="max-width:420px;">
-    <div class="modal-header">
-      <span class="modal-title">Bukti Pembayaran</span>
-      <button class="modal-close" onclick="closeModal('modal-bukti')">✕</button>
-    </div>
+    <div class="modal-header"><span class="modal-title">Bukti Pembayaran</span><button class="modal-close" data-close="modal-bukti">✕</button></div>
     <div id="bukti-content"></div>
-    <div class="flex-row" style="margin-top:16px;">
-      <button class="btn btn-primary" onclick="downloadBuktiPDF()">⬇️ Download PDF</button>
-      <button class="btn btn-outline" onclick="closeModal('modal-bukti')">Tutup</button>
-    </div>
+    <div class="flex-row" style="margin-top:16px;"><button class="btn btn-primary" id="btn-download-pdf">⬇️ Download PDF</button><button class="btn btn-outline" data-close="modal-bukti">Tutup</button></div>
   </div>
 </div>
 
-
 <div class="overlay" id="modal-anggota">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-anggota-judul">Anggota Keluarga</span>
-      <button class="modal-close" onclick="closeModal('modal-anggota')">✕</button>
-    </div>
+    <div class="modal-header"><span class="modal-title" id="modal-anggota-judul">Anggota Keluarga</span><button class="modal-close" data-close="modal-anggota">✕</button></div>
     <div id="modal-anggota-content"></div>
   </div>
 </div>
 
 <div class="overlay" id="modal-form-anggota">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-form-anggota-title">Tambah Anggota</span>
-      <button class="modal-close" onclick="closeModal('modal-form-anggota')">✕</button>
-    </div>
-    <form id="form-anggota" onsubmit="saveAnggota(event)">
-      <div class="form-group">
-        <label>Nama Lengkap *</label>
-        <input type="text" id="a-nama" placeholder="Nama lengkap anggota" required>
-      </div>
-      <div class="form-group">
-        <label>Hubungan Keluarga *</label>
-        <select id="a-hubungan">
-          <option value="Kepala Keluarga">Kepala Keluarga</option>
-          <option value="Istri">Istri</option>
-          <option value="Anak">Anak</option>
-          <option value="Orang Tua">Orang Tua</option>
-          <option value="Saudara">Saudara</option>
-          <option value="Lainnya">Lainnya</option>
-        </select>
-      </div>
-      <input type="hidden" id="a-id">
-      <input type="hidden" id="a-warga-id">
-      <div class="flex-row">
-        <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        <button type="button" class="btn btn-outline" onclick="closeModal('modal-form-anggota')">Batal</button>
-      </div>
+    <div class="modal-header"><span class="modal-title" id="modal-form-anggota-title">Tambah Anggota</span><button class="modal-close" data-close="modal-form-anggota">✕</button></div>
+    <form id="form-anggota">
+      <div class="form-group"><label>Nama Lengkap *</label><input type="text" id="a-nama" required></div>
+      <div class="form-group"><label>Hubungan Keluarga *</label><select id="a-hubungan"><option value="Kepala Keluarga">Kepala Keluarga</option><option value="Istri">Istri</option><option value="Anak">Anak</option><option value="Orang Tua">Orang Tua</option><option value="Saudara">Saudara</option><option value="Lainnya">Lainnya</option></select></div>
+      <input type="hidden" id="a-id"><input type="hidden" id="a-warga-id">
+      <div class="flex-row"><button type="submit" class="btn btn-primary">💾 Simpan</button><button type="button" class="btn btn-outline" data-close="modal-form-anggota">Batal</button></div>
     </form>
   </div>
 </div>
 
-
 <div class="overlay" id="modal-device">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Device Login Admin</span>
-      <button class="modal-close" onclick="closeModal('modal-device')">✕</button>
-    </div>
-    <div id="modal-device-content"><div class="loading">Memuat...</div></div>
+    <div class="modal-header"><span class="modal-title">Device Login Admin</span><button class="modal-close" data-close="modal-device">✕</button></div>
+    <div id="modal-device-content"></div>
   </div>
 </div>
+
+<!-- Main Script -->
+<script type="module" src="js/main.js"></script>
 
 </body>
 </html>
