@@ -235,6 +235,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
+  // Dashboard - Pengumuman
+  const addPengumumanBtn = document.getElementById('btn-add-pengumuman');
+  if (addPengumumanBtn) {
+    addPengumumanBtn.onclick = () => {
+      document.getElementById('form-pengumuman').reset();
+      document.getElementById('p-id').value = '';
+      openModal('modal-pengumuman');
+    };
+  }
+  const formPengumuman = document.getElementById('form-pengumuman');
+  if (formPengumuman) formPengumuman.onsubmit = (e) => app.savePengumuman(e);
+
+  // Dashboard - Kegiatan
+  const addKegiatanBtn = document.getElementById('btn-add-kegiatan');
+  if (addKegiatanBtn) {
+    addKegiatanBtn.onclick = () => {
+      document.getElementById('form-kegiatan').reset();
+      document.getElementById('kg-id').value = '';
+      document.getElementById('kg-tanggal').value = new Date().toISOString().slice(0, 10);
+      openModal('modal-kegiatan');
+    };
+  }
+  const formKegiatan = document.getElementById('form-kegiatan');
+  if (formKegiatan) formKegiatan.onsubmit = (e) => app.saveKegiatan(e);
+
+  // Dashboard - Struktur
+  const editStrukturBtn = document.getElementById('btn-edit-struktur');
+  if (editStrukturBtn) {
+    editStrukturBtn.onclick = async () => {
+      const { data } = await api.fetchStruktur();
+      const s = data?.nilai || {};
+      document.getElementById('s-ketua').value = s.ketua || '';
+      document.getElementById('s-sekretaris1').value = s.sekretaris1 || '';
+      document.getElementById('s-sekretaris2').value = s.sekretaris2 || '';
+      document.getElementById('s-bendahara1').value = s.bendahara1 || '';
+      document.getElementById('s-bendahara2').value = s.bendahara2 || '';
+      openModal('modal-struktur');
+    };
+  }
+  const formStruktur = document.getElementById('form-struktur');
+  if (formStruktur) formStruktur.onsubmit = (e) => app.saveStruktur(e);
+
   // Export & Misc
   const expPdfBtn = document.getElementById('btn-export-pdf');
   if (expPdfBtn) expPdfBtn.onclick = () => exportUtil.exportKasPDF();
@@ -380,6 +422,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (target.classList.contains('view-bukti-btn')) app.showBuktiPembayaran(target.getAttribute('data-warga-id'), target.getAttribute('data-iuran-id'));
+
+    if (target.classList.contains('edit-pengumuman-btn')) {
+      const id = target.getAttribute('data-id');
+      db.from('pengumuman').select('*').eq('id', id).single().then(({ data: p }) => {
+        if (p) {
+          document.getElementById('p-id').value = p.id;
+          document.getElementById('p-judul').value = p.judul;
+          document.getElementById('p-isi').value = p.isi;
+          document.getElementById('p-prioritas').value = p.prioritas;
+          openModal('modal-pengumuman');
+        }
+      });
+    }
+    if (target.classList.contains('delete-pengumuman-btn')) app.deletePengumuman(target.getAttribute('data-id'));
+
+    if (target.classList.contains('edit-kegiatan-btn')) {
+      const id = target.getAttribute('data-id');
+      db.from('kegiatan').select('*').eq('id', id).single().then(({ data: k }) => {
+        if (k) {
+          document.getElementById('kg-id').value = k.id;
+          document.getElementById('kg-nama').value = k.nama;
+          document.getElementById('kg-tanggal').value = k.tanggal;
+          document.getElementById('kg-waktu').value = k.waktu || '';
+          document.getElementById('kg-lokasi').value = k.lokasi || '';
+          document.getElementById('kg-deskripsi').value = k.deskripsi || '';
+          openModal('modal-kegiatan');
+        }
+      });
+    }
+    if (target.classList.contains('delete-kegiatan-btn')) app.deleteKegiatan(target.getAttribute('data-id'));
+
+    if (target.classList.contains('send-wa-btn')) {
+      const wargaId = target.getAttribute('data-warga-id');
+      const iuranId = target.getAttribute('data-iuran-id');
+      const item = state.allIuranData.find(w => w.id === wargaId);
+      if (item && item.no_hp) {
+        const noHp = item.no_hp.replace(/[^0-9]/g, '').replace(/^0/, '62');
+        const bulanNama = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const bulan = document.getElementById('filter-bulan-iuran').value;
+        const tahun = document.getElementById('filter-tahun-iuran').value;
+        const iuran = item.iuran;
+        const nominal = iuran ? 'Rp ' + Number(iuran.nominal).toLocaleString('id-ID') : '-';
+        const tglBayar = iuran && iuran.tgl_bayar ? new Date(iuran.tgl_bayar).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-';
+        const msg = `*Bukti Pembayaran Iuran RT 03 RW 12*\n\nNama: ${item.nama_kk}\nAlamat: Blok ${item.blok}-${item.nomor_rumah}\nBulan: ${bulanNama[parseInt(bulan)]} ${tahun}\nNominal: ${nominal}\nTanggal Bayar: ${tglBayar}\nStatus: ✅ LUNAS\n\nTerima kasih telah membayar iuran tepat waktu.`;
+        window.open(`https://wa.me/${noHp}?text=${encodeURIComponent(msg)}`, '_blank');
+      } else {
+        showToast('Nomor HP warga tidak tersedia', 'error');
+      }
+    }
 
     if (target.classList.contains('edit-kas-btn')) {
       const id = target.getAttribute('data-id');

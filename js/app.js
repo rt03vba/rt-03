@@ -397,6 +397,77 @@ export async function showBuktiPembayaran(wargaId, iuranId) {
   openModal('modal-bukti');
 }
 
+export async function savePengumuman(e) {
+  e.preventDefault();
+  const id = document.getElementById('p-id').value;
+  const payload = {
+    judul: document.getElementById('p-judul').value,
+    isi: document.getElementById('p-isi').value,
+    prioritas: document.getElementById('p-prioritas').value
+  };
+  if (id) payload.id = id;
+  const { error } = await api.savePengumuman(payload);
+  if (error) { showToast('Gagal: ' + error.message, 'error'); return; }
+  showToast('Pengumuman disimpan!');
+  closeModal('modal-pengumuman');
+  api.logAktivitas(id ? 'Edit Pengumuman' : 'Tambah Pengumuman', payload.judul);
+  loadDashboard();
+}
+
+export async function deletePengumuman(id) {
+  if (!confirm('Hapus pengumuman ini?')) return;
+  const { error } = await api.deletePengumuman(id);
+  if (error) { showToast('Gagal: ' + error.message, 'error'); return; }
+  showToast('Pengumuman dihapus!');
+  api.logAktivitas('Hapus Pengumuman', id);
+  loadDashboard();
+}
+
+export async function saveKegiatan(e) {
+  e.preventDefault();
+  const id = document.getElementById('kg-id').value;
+  const payload = {
+    nama: document.getElementById('kg-nama').value,
+    tanggal: document.getElementById('kg-tanggal').value,
+    waktu: document.getElementById('kg-waktu').value || null,
+    lokasi: document.getElementById('kg-lokasi').value || null,
+    deskripsi: document.getElementById('kg-deskripsi').value || null
+  };
+  if (id) payload.id = id;
+  const { error } = await api.saveKegiatan(payload);
+  if (error) { showToast('Gagal: ' + error.message, 'error'); return; }
+  showToast('Kegiatan disimpan!');
+  closeModal('modal-kegiatan');
+  api.logAktivitas(id ? 'Edit Kegiatan' : 'Tambah Kegiatan', payload.nama);
+  loadDashboard();
+}
+
+export async function deleteKegiatan(id) {
+  if (!confirm('Hapus kegiatan ini?')) return;
+  const { error } = await api.deleteKegiatan(id);
+  if (error) { showToast('Gagal: ' + error.message, 'error'); return; }
+  showToast('Kegiatan dihapus!');
+  api.logAktivitas('Hapus Kegiatan', id);
+  loadDashboard();
+}
+
+export async function saveStruktur(e) {
+  e.preventDefault();
+  const payload = {
+    ketua: document.getElementById('s-ketua').value,
+    sekretaris1: document.getElementById('s-sekretaris1').value,
+    sekretaris2: document.getElementById('s-sekretaris2').value,
+    bendahara1: document.getElementById('s-bendahara1').value,
+    bendahara2: document.getElementById('s-bendahara2').value
+  };
+  const { error } = await api.saveStruktur(payload);
+  if (error) { showToast('Gagal: ' + error.message, 'error'); return; }
+  showToast('Struktur disimpan!');
+  closeModal('modal-struktur');
+  api.logAktivitas('Edit Struktur', '');
+  loadDashboard();
+}
+
 export async function showAnggotaKeluarga(wargaId, namaKK) {
   state.currentWargaAnggota = { id: wargaId, nama: namaKK };
   const isAdmin = state.currentUser === 'admin';

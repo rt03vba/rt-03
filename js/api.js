@@ -33,7 +33,7 @@ export async function fetchKegiatan(today) {
 }
 
 export async function fetchWarga() {
-  return await db.from('warga').select('*');
+  return await db.from('warga').select('*').order('blok').order('nomor_rumah');
 }
 
 export async function fetchIuran(bulan, tahun) {
@@ -54,4 +54,32 @@ export async function fetchLogAktivitas() {
 
 export async function fetchAdminSessions() {
   return await db.from('admin_sessions').select('*').order('last_active', { ascending: false });
+}
+
+export async function savePengumuman(data) {
+  if (data.id) {
+    return await db.from('pengumuman').update({ judul: data.judul, isi: data.isi, prioritas: data.prioritas }).eq('id', data.id);
+  } else {
+    return await db.from('pengumuman').insert({ judul: data.judul, isi: data.isi, prioritas: data.prioritas, aktif: true });
+  }
+}
+
+export async function deletePengumuman(id) {
+  return await db.from('pengumuman').delete().eq('id', id);
+}
+
+export async function saveKegiatan(data) {
+  if (data.id) {
+    return await db.from('kegiatan').update({ nama: data.nama, tanggal: data.tanggal, waktu: data.waktu, lokasi: data.lokasi, deskripsi: data.deskripsi }).eq('id', data.id);
+  } else {
+    return await db.from('kegiatan').insert({ nama: data.nama, tanggal: data.tanggal, waktu: data.waktu, lokasi: data.lokasi, deskripsi: data.deskripsi });
+  }
+}
+
+export async function deleteKegiatan(id) {
+  return await db.from('kegiatan').delete().eq('id', id);
+}
+
+export async function saveStruktur(data) {
+  return await db.from('pengaturan').upsert({ kunci: 'rt_struktur', nilai: data }, { onConflict: 'kunci' });
 }

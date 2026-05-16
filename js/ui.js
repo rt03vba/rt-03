@@ -82,7 +82,7 @@ export function renderPengumuman(data) {
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
         <span class="badge ${priColor[p.prioritas] || 'badge-info'}">${p.prioritas.toUpperCase()}</span>
         <span style="font-weight:700;font-size:14px;">${p.judul}</span>
-        ${state.currentUser === 'admin' ? `<button class="delete-pengumuman-btn" data-id="${p.id}" style="margin-left:auto;background:none;border:none;color:#E53935;cursor:pointer;font-size:12px;">🗑️</button>` : ''}
+        ${state.currentUser === 'admin' ? `<div style="margin-left:auto;display:flex;gap:4px;"><button class="edit-pengumuman-btn" data-id="${p.id}" style="background:none;border:none;color:#1976D2;cursor:pointer;font-size:12px;">✏️</button><button class="delete-pengumuman-btn" data-id="${p.id}" style="background:none;border:none;color:#E53935;cursor:pointer;font-size:12px;">🗑️</button></div>` : ''}
       </div>
       <div style="font-size:13px;color:#555;line-height:1.5;">${p.isi}</div>
       <div style="font-size:11px;color:#aaa;margin-top:4px;">${fmtDate(p.created_at)}</div>
@@ -102,7 +102,7 @@ export function renderKegiatan(data) {
         <div style="font-weight:700;font-size:14px;">${k.nama}</div>
         <div style="font-size:12px;color:#777;">${k.waktu || ''} ${k.lokasi ? '· ' + k.lokasi : ''}</div>
       </div>
-      ${state.currentUser === 'admin' ? `<button class="delete-kegiatan-btn" data-id="${k.id}" style="background:none;border:none;color:#E53935;cursor:pointer;">🗑️</button>` : ''}
+      ${state.currentUser === 'admin' ? `<div style="display:flex;gap:4px;"><button class="edit-kegiatan-btn" data-id="${k.id}" style="background:none;border:none;color:#1976D2;cursor:pointer;">✏️</button><button class="delete-kegiatan-btn" data-id="${k.id}" style="background:none;border:none;color:#E53935;cursor:pointer;">🗑️</button></div>` : ''}
     </div>`).join('');
 }
 
