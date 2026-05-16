@@ -47,6 +47,18 @@ export function initFilterBulanTahun(elBulanId, elTahunId, onChangeFn) {
   }
 }
 
+export function togglePass(targetId, btn) {
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
 export function getDeviceId() {
   let id = localStorage.getItem('rt_device_id');
   if (!id) {
