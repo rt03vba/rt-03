@@ -311,7 +311,7 @@ export async function saveIuran(e) {
   await loadIuran();
   loadDashboard();
   loadKas();
-  if (status === 'lunas' && finalIuranId) showBuktiPembayaran(wargaId, finalIuranId);
+  if (status === 'lunas' && finalIuranId) showBuktiPembayaran(wargaId, finalIuranId, true);
 }
 
 export async function generateIuranBulanan() {
@@ -360,7 +360,7 @@ export async function deleteKas(id) {
   loadDashboard();
 }
 
-export async function showBuktiPembayaran(wargaId, iuranId) {
+export async function showBuktiPembayaran(wargaId, iuranId, autoKirimWA = false) {
   const warga = state.allIuranData.find(w => w.id === wargaId);
   if (!warga) return;
   const { data: iuran } = await db.from('iuran').select('*').eq('id', iuranId).single();
@@ -373,6 +373,55 @@ export async function showBuktiPembayaran(wargaId, iuranId) {
   const bulanLabel = `${bulanNama[iuran.bulan]} ${iuran.tahun}`;
 
   state.currentBuktiData = { warga, iuran, noBukti, tglBayar, nominal, bulanLabel };
+
+  // Generate link bukti standalone (bisa dibuka warga tanpa login)
+  const buktiData = {
+    nama : warga.nama_kk,
+    blok : warga.blok,
+    nomor: warga.nomor_rumah,
+    bulan: iuran.bulan,
+    tahun: iuran.tahun,
+    nominal: iuran.nominal,
+    tgl  : iuran.tgl_bayar || '',
+    id   : iuran.id,
+    keterangan: iuran.keterangan || ''
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(buktiData))));
+  const linkBukti = `${window.location.origin}${window.location.pathname}?bukti=${encoded}`;
+
+  // Rincian paket (sesuai kode lama)
+  const rincian = (iuran.keterangan === '50000')
+    ? '\nRincian Iuran anda :\nRp.45.000 untuk sampah, keamanan, rukem.\nRp.5.000 untuk kas RT\n'
+    : (iuran.keterangan === '70000')
+    ? '\nRincian Iuran anda :\nRp.65.000 untuk sampah, keamanan, rukem.\nRp.5.000 untuk kas RT\n'
+    : '';
+
+  // Buat pesan WA format lengkap (sama dengan versi lama)
+  const noHp = (warga.no_hp || '').replace(/\D/g, '').replace(/^0/, '62');
+  const nominalStr = 'Rp ' + Number(iuran.nominal).toLocaleString('id-ID');
+  const pesanTeks =
+    `RT 03 APP – Manajemen Warga\n` +
+    `🔗 ${window.location.origin}\n\n` +
+    `Yth. Bapak/Ibu *${warga.nama_kk}*\n\n` +
+    `Pembayaran iuran bulan *${bulanLabel}* telah kami terima.\n\n` +
+    `📋 No. Bukti : ${noBukti}\n` +
+    `🏠 No. Rumah : Blok ${warga.blok}-${warga.nomor_rumah}\n` +
+    `💰 Nominal   : ${nominalStr}\n` +
+    `📅 Tgl Bayar : ${tglBayar}\n` +
+    `${rincian}\n` +
+    `🖼️ Bukti pembayaran:\n${linkBukti}\n\n` +
+    `Terima kasih atas kepercayaan dan partisipasi aktif Bapak/Ibu. Bersama kita wujudkan lingkungan Villa Bintaro Asri yang nyaman dan harmonis 🤝\n` +
+    `*RT 03 RW 12 Villa Bintaro Asri*`;
+
+  const pesanWA = encodeURIComponent(pesanTeks);
+  const urlWA = noHp ? `https://wa.me/${noHp}?text=${pesanWA}` : null;
+
+  const tombolWA = urlWA
+    ? `<a href="${urlWA}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:white;font-weight:700;font-size:14px;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.857L.057 23.882l6.196-1.453A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.894a9.877 9.877 0 01-5.031-1.378l-.36-.214-3.732.875.937-3.63-.235-.374A9.861 9.861 0 012.106 12C2.106 6.58 6.58 2.106 12 2.106S21.894 6.58 21.894 12 17.42 21.894 12 21.894z"/></svg>
+        Kirim ke WhatsApp
+      </a>`
+    : `<div style="margin-top:10px;padding:10px;background:#FEF9C3;border-radius:8px;font-size:12px;color:#92400E;text-align:center;">⚠️ No. HP warga belum diisi</div>`;
 
   document.getElementById('bukti-content').innerHTML = `
     <div id="bukti-print" style="font-family:'Segoe UI',sans-serif;">
@@ -392,9 +441,15 @@ export async function showBuktiPembayaran(wargaId, iuranId) {
         <div style="margin-top:16px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:10px;text-align:center;">
           <span style="font-size:14px;font-weight:800;color:#15803D;">✅ Pembayaran Diterima</span>
         </div>
+        ${tombolWA}
       </div>
     </div>`;
   openModal('modal-bukti');
+
+  // Jika dipanggil otomatis dari saveIuran, langsung buka WA
+  if (autoKirimWA && urlWA) {
+    setTimeout(() => window.open(urlWA, '_blank'), 800);
+  }
 }
 
 export async function savePengumuman(e) {
