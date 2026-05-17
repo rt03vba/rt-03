@@ -21,7 +21,7 @@ export async function loadDashboard() {
 
   // Load Struktur
   const resStruk = await api.fetchStruktur();
-  const s = resStruk?.nilai || { ketua: '', sekretaris1: '', sekretaris2: '', bendahara1: '', bendahara2: '' };
+  const s = resStruk?.data?.nilai || { ketua: '', sekretaris1: '', sekretaris2: '', bendahara1: '', bendahara2: '' };
   ui.renderStruktur(s);
 
   // Load Pengumuman
