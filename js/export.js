@@ -7,13 +7,20 @@ export function exportKasPDF() {
   // Ambil filter aktif dari DOM
   const bulanEl = document.getElementById('filter-kas-bulan');
   const tahunEl = document.getElementById('filter-kas-tahun');
-  const bulanVal = bulanEl?.value || '';
-  const tahunVal = tahunEl?.value || '';
+  const bulanVal = bulanEl?.value?.trim() || '';
+  const tahunVal = tahunEl?.value?.trim() || '';
 
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const periodeLabel = bulanVal && tahunVal
     ? `${bulanNama[parseInt(bulanVal)]} ${tahunVal}`
     : tahunVal ? `Tahun ${tahunVal}` : 'Semua Periode';
+
+  // Nama file PDF
+  const namaFile = bulanVal && tahunVal
+    ? `laporan-kas-${bulanNama[parseInt(bulanVal)]}-${tahunVal}.pdf`
+    : tahunVal
+    ? `laporan-kas-${tahunVal}.pdf`
+    : `laporan-kas-semua.pdf`;
 
   // Filter data sesuai bulan/tahun aktif
   let data = state.allKasData || [];
@@ -318,7 +325,7 @@ export function exportKasPDF() {
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(30, 41, 59);
   doc.text('Andilhika', mx + cW - 25, y + 18, { align: 'center' });
 
-  doc.save(`laporan-kas-${periodeLabel.replace(' ', '-')}.pdf`);
+  doc.save(namaFile);
   showToast('PDF berhasil diunduh!');
 }
 
