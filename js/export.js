@@ -11,27 +11,23 @@ export function exportKasPDF() {
   const tahunVal = tahunEl?.value?.trim() || '';
 
   const bulanNama = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const bulanIdx  = bulanVal ? parseInt(bulanVal) : 0;
   const periodeLabel = bulanVal && tahunVal
-    ? `${bulanNama[parseInt(bulanVal)]} ${tahunVal}`
+    ? `${bulanNama[bulanIdx]} ${tahunVal}`
+    : bulanVal ? `${bulanNama[bulanIdx]}`
     : tahunVal ? `Tahun ${tahunVal}` : 'Semua Periode';
 
   // Nama file PDF
   const namaFile = bulanVal && tahunVal
-    ? `laporan-kas-${bulanNama[parseInt(bulanVal)]}-${tahunVal}.pdf`
-    : tahunVal
-    ? `laporan-kas-${tahunVal}.pdf`
+    ? `laporan-kas-${bulanNama[bulanIdx]}-${tahunVal}.pdf`
+    : bulanVal ? `laporan-kas-${bulanNama[bulanIdx]}.pdf`
+    : tahunVal ? `laporan-kas-${tahunVal}.pdf`
     : `laporan-kas-semua.pdf`;
 
-  // Filter data sesuai bulan/tahun aktif
+  // Filter data — sama persis dengan applyFilterKas di app.js
   let data = state.allKasData || [];
-  if (bulanVal) data = data.filter(k => {
-    const d = new Date(k.tanggal);
-    return (d.getMonth() + 1) === parseInt(bulanVal);
-  });
-  if (tahunVal) data = data.filter(k => {
-    const d = new Date(k.tanggal);
-    return d.getFullYear() === parseInt(tahunVal);
-  });
+  if (bulanVal) data = data.filter(k => k.tanggal && k.tanggal.slice(5, 7) === bulanVal.padStart(2, '0'));
+  if (tahunVal) data = data.filter(k => k.tanggal && k.tanggal.slice(0, 4) === tahunVal);
 
   // Pisahkan data ke 3 kategori
   const iuranMasuk  = data.filter(k => k.jenis === 'masuk' && k.created_by === 'auto');
