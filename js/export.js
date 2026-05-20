@@ -24,16 +24,30 @@ export function exportKasPDF() {
     : tahunVal ? `laporan-kas-${tahunVal}.pdf`
     : `laporan-kas-semua.pdf`;
 
-  // Filter data — sama persis dengan applyFilterKas di app.js
+  // Filter data:
+  // - iuran (created_by=auto): filter by bulan_iuran/tahun_iuran (bulan tagihan)
+  // - manual: filter by tanggal input
   let data = state.allKasData || [];
-  if (bulanVal) data = data.filter(k => k.tanggal && k.tanggal.slice(5, 7) === bulanVal.padStart(2, '0'));
-  if (tahunVal) data = data.filter(k => k.tanggal && k.tanggal.slice(0, 4) === tahunVal);
+
+  const filterIuranAuto = (k) => {
+    if (k.created_by !== 'auto') return false;
+    const cocokBulan = bulanVal ? (k.bulan_iuran === parseInt(bulanVal) || (!k.bulan_iuran && k.tanggal?.slice(5,7) === bulanVal.padStart(2,'0'))) : true;
+    const cocokTahun = tahunVal ? (k.tahun_iuran === parseInt(tahunVal) || (!k.tahun_iuran && k.tanggal?.slice(0,4) === tahunVal)) : true;
+    return cocokBulan && cocokTahun;
+  };
+
+  const filterManual = (k) => {
+    if (k.created_by === 'auto') return false;
+    const cocokBulan = bulanVal ? k.tanggal?.slice(5,7) === bulanVal.padStart(2,'0') : true;
+    const cocokTahun = tahunVal ? k.tanggal?.slice(0,4) === tahunVal : true;
+    return cocokBulan && cocokTahun;
+  };
 
   // Pisahkan data ke 3 kategori
-  const iuranMasuk  = data.filter(k => k.jenis === 'masuk' && k.created_by === 'auto');
-  const manualMasuk = data.filter(k => k.jenis === 'masuk' && k.created_by !== 'auto');
-  const manualKeluar= data.filter(k => k.jenis === 'keluar' && k.created_by !== 'auto');
-  const akomodasiData = data.filter(k => k.jenis === 'keluar' && k.created_by === 'auto');
+  const iuranMasuk   = data.filter(k => filterIuranAuto(k) && k.jenis === 'masuk');
+  const manualMasuk  = data.filter(k => filterManual(k) && k.jenis === 'masuk');
+  const manualKeluar = data.filter(k => filterManual(k) && k.jenis === 'keluar');
+  const akomodasiData= data.filter(k => filterIuranAuto(k) && k.jenis === 'keluar');
 
   // Hitung total akomodasi (grouping per nominal)
   const akomodasiGroups = {};

@@ -282,26 +282,49 @@ export async function saveIuran(e) {
   const blokWarga = warga ? `Blok ${warga.blok}-${warga.nomor_rumah}` : null;
 
   const bulanPadded = String(bulan).padStart(2, '0');
-  const tglHari = `${tahun}-${bulanPadded}-01`;
-  const bulanAwal = tglHari;
-  const bulanAkhir = `${tahun}-${bulanPadded}-31`;
+  const bulanAwal   = `${tahun}-${bulanPadded}-01`;
+  const bulanAkhir  = `${tahun}-${bulanPadded}-31`;
 
-  const { data: kasLamaMasuk } = await db.from('kas').select('id').eq('jenis', 'masuk').eq('kategori', 'iuran').eq('blok_warga', blokWarga).gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  // Hapus kas lama — cari by bulan_iuran+tahun_iuran jika ada, fallback ke tanggal range
+  const { data: kasLamaMasuk } = await db.from('kas').select('id')
+    .eq('jenis', 'masuk').eq('kategori', 'iuran').eq('blok_warga', blokWarga)
+    .eq('bulan_iuran', bulan).eq('tahun_iuran', tahun);
   if (kasLamaMasuk?.length) for (const k of kasLamaMasuk) await db.from('kas').delete().eq('id', k.id);
+  // fallback untuk data lama yg belum punya bulan_iuran
+  const { data: kasLamaMasukFb } = await db.from('kas').select('id')
+    .eq('jenis', 'masuk').eq('kategori', 'iuran').eq('blok_warga', blokWarga)
+    .is('bulan_iuran', null).gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  if (kasLamaMasukFb?.length) for (const k of kasLamaMasukFb) await db.from('kas').delete().eq('id', k.id);
 
-  const { data: kasLamaKeluar } = await db.from('kas').select('id').eq('jenis', 'keluar').eq('kategori', 'operasional').eq('blok_warga', blokWarga).gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  const { data: kasLamaKeluar } = await db.from('kas').select('id')
+    .eq('jenis', 'keluar').eq('kategori', 'operasional').eq('blok_warga', blokWarga)
+    .eq('bulan_iuran', bulan).eq('tahun_iuran', tahun);
   if (kasLamaKeluar?.length) for (const k of kasLamaKeluar) await db.from('kas').delete().eq('id', k.id);
+  // fallback untuk data lama
+  const { data: kasLamaKeluarFb } = await db.from('kas').select('id')
+    .eq('jenis', 'keluar').eq('kategori', 'operasional').eq('blok_warga', blokWarga)
+    .is('bulan_iuran', null).gte('tanggal', bulanAwal).lte('tanggal', bulanAkhir);
+  if (kasLamaKeluarFb?.length) for (const k of kasLamaKeluarFb) await db.from('kas').delete().eq('id', k.id);
 
   if (status === 'lunas') {
     const paket = ket;
     const nominalBayar = parseInt(paket) || nominal;
-    await db.from('kas').insert({ tanggal: tglHari, jenis: 'masuk', nominal: nominalBayar, keterangan: ketKas, kategori: 'iuran', created_by: 'auto', blok_warga: blokWarga });
+    // tanggal = tanggal input (untuk history), bulan_iuran/tahun_iuran = bulan tagihan (untuk laporan)
+    await db.from('kas').insert({
+      tanggal: tglBayar, jenis: 'masuk', nominal: nominalBayar,
+      keterangan: ketKas, kategori: 'iuran', created_by: 'auto',
+      blok_warga: blokWarga, bulan_iuran: bulan, tahun_iuran: tahun
+    });
     let nominalPotong = 0;
     if (paket === '50000') nominalPotong = 45000;
     else if (paket === '70000') nominalPotong = 65000;
     else if (paket === '20000') nominalPotong = 20000;
     if (nominalPotong > 0) {
-      await db.from('kas').insert({ tanggal: tglHari, jenis: 'keluar', nominal: nominalPotong, keterangan: ketAkomodasi, kategori: 'operasional', created_by: 'auto', blok_warga: blokWarga });
+      await db.from('kas').insert({
+        tanggal: tglBayar, jenis: 'keluar', nominal: nominalPotong,
+        keterangan: ketAkomodasi, kategori: 'operasional', created_by: 'auto',
+        blok_warga: blokWarga, bulan_iuran: bulan, tahun_iuran: tahun
+      });
     }
   }
 
