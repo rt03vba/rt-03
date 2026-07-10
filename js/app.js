@@ -208,7 +208,44 @@ export async function clearLog() {
   loadLog();
 }
 
-// ... (previous functions)
+const DEFAULT_PAKET_IURAN = [
+  { kode: '50000', label: 'Rp 50.000', nominal: 50000, potongan: 45000 },
+  { kode: '70000', label: 'Rp 70.000', nominal: 70000, potongan: 65000 },
+  { kode: '20000', label: 'Rp 20.000', nominal: 20000, potongan: 20000 }
+];
+
+export async function loadPaketIuran() {
+  const { data } = await api.fetchPaketIuran();
+  state.paketIuran = data?.nilai || DEFAULT_PAKET_IURAN;
+}
+
+export function renderPaketIuranDropdown() {
+  const el = document.getElementById('i-ket');
+  if (!el) return;
+  const selected = el.value;
+  el.innerHTML = (state.paketIuran || []).map(p =>
+    `<option value="${p.kode}" ${p.kode === selected ? 'selected' : ''}>💰 ${p.label}</option>`
+  ).join('');
+}
+
+export function renderPaketList() {
+  const el = document.getElementById('paket-list');
+  if (!el) return;
+  const data = state.paketIuran || DEFAULT_PAKET_IURAN;
+  el.innerHTML = data.map((p, i) => `
+    <div class="paket-row" style="background:#F8FAFC;border-radius:8px;padding:10px;border:1px solid #E2E8F0;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+        <div><label style="font-size:10px;color:#64748B;">Kode</label><input type="text" class="p-kode" value="${p.kode}" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+        <div><label style="font-size:10px;color:#64748B;">Label</label><input type="text" class="p-label" value="${p.label}" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:end;">
+        <div><label style="font-size:10px;color:#64748B;">Nominal</label><input type="number" class="p-nominal" value="${p.nominal}" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+        <div><label style="font-size:10px;color:#64748B;">Potongan</label><input type="number" class="p-potongan" value="${p.potongan}" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+        <button type="button" class="btn btn-danger btn-sm hapus-paket-btn" data-index="${i}" style="padding:6px 10px;font-size:12px;">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
 
 export async function saveWarga(e) {
   e.preventDefault();
@@ -308,17 +345,14 @@ export async function saveIuran(e) {
 
   if (status === 'lunas') {
     const paket = ket;
-    const nominalBayar = parseInt(paket) || nominal;
-    // tanggal = tanggal input (untuk history), bulan_iuran/tahun_iuran = bulan tagihan (untuk laporan)
+    const paketObj = (state.paketIuran || []).find(p => p.kode === paket);
+    const nominalBayar = paketObj ? paketObj.nominal : (parseInt(paket) || nominal);
     await db.from('kas').insert({
       tanggal: tglBayar, jenis: 'masuk', nominal: nominalBayar,
       keterangan: ketKas, kategori: 'iuran', created_by: 'auto',
       blok_warga: blokWarga, bulan_iuran: bulan, tahun_iuran: tahun
     });
-    let nominalPotong = 0;
-    if (paket === '50000') nominalPotong = 45000;
-    else if (paket === '70000') nominalPotong = 65000;
-    else if (paket === '20000') nominalPotong = 20000;
+    const nominalPotong = paketObj ? paketObj.potongan : 0;
     if (nominalPotong > 0) {
       await db.from('kas').insert({
         tanggal: tglBayar, jenis: 'keluar', nominal: nominalPotong,
@@ -412,11 +446,9 @@ export async function showBuktiPembayaran(wargaId, iuranId, autoKirimWA = false)
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(buktiData))));
   const linkBukti = `${window.location.origin}${window.location.pathname}?bukti=${encoded}`;
 
-  // Rincian paket (sesuai kode lama)
-  const rincian = (iuran.keterangan === '50000')
-    ? '\nRincian Iuran anda :\nRp.45.000 untuk sampah, keamanan, rukem.\nRp.5.000 untuk kas RT\n'
-    : (iuran.keterangan === '70000')
-    ? '\nRincian Iuran anda :\nRp.65.000 untuk sampah, keamanan, rukem.\nRp.5.000 untuk kas RT\n'
+  const paketRincian = (state.paketIuran || []).find(p => p.kode === iuran.keterangan);
+  const rincian = paketRincian
+    ? `\nRincian Iuran anda :\nRp.${(paketRincian.potongan).toLocaleString('id-ID')} untuk sampah, keamanan, rukem.\nRp.${(paketRincian.nominal - paketRincian.potongan).toLocaleString('id-ID')} untuk kas RT\n`
     : '';
 
   // Buat pesan WA format lengkap (sama dengan versi lama)
@@ -544,6 +576,24 @@ export async function saveStruktur(e) {
   closeModal('modal-struktur');
   api.logAktivitas('Edit Struktur', '');
   loadDashboard();
+}
+
+export async function savePaketIuranConfig(e) {
+  e.preventDefault();
+  const rows = document.querySelectorAll('.paket-row');
+  const data = Array.from(rows).map(row => ({
+    kode: row.querySelector('.p-kode').value.trim(),
+    label: row.querySelector('.p-label').value.trim(),
+    nominal: parseInt(row.querySelector('.p-nominal').value) || 0,
+    potongan: parseInt(row.querySelector('.p-potongan').value) || 0
+  })).filter(p => p.kode && p.label);
+  if (!data.length) { showToast('Minimal satu paket harus diisi!', 'error'); return; }
+  const { error } = await api.savePaketIuran(data);
+  if (error) { showToast('Gagal: ' + error.message, 'error'); return; }
+  showToast('Paket iuran disimpan!');
+  closeModal('modal-paket-iuran');
+  api.logAktivitas('Edit Paket Iuran', data.map(p => `${p.kode}=${p.potongan}`).join(', '));
+  await loadPaketIuran();
 }
 
 export async function showAnggotaKeluarga(wargaId, namaKK) {

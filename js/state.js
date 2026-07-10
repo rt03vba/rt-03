@@ -8,7 +8,8 @@ export const state = {
   editWargaId: null,
   editKasId: null,
   currentBuktiData: null,
-  currentWargaAnggota: null
+  currentWargaAnggota: null,
+  paketIuran: null
 };
 
 export const STRUKTUR_KEY = 'rt_struktur';

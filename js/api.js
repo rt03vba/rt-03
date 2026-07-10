@@ -83,3 +83,11 @@ export async function deleteKegiatan(id) {
 export async function saveStruktur(data) {
   return await db.from('pengaturan').upsert({ kunci: 'rt_struktur', nilai: data }, { onConflict: 'kunci' });
 }
+
+export async function fetchPaketIuran() {
+  return await db.from('pengaturan').select('nilai').eq('kunci', 'paket_iuran').maybeSingle();
+}
+
+export async function savePaketIuran(data) {
+  return await db.from('pengaturan').upsert({ kunci: 'paket_iuran', nilai: data }, { onConflict: 'kunci' });
+}

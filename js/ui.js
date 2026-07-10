@@ -139,9 +139,9 @@ export function renderIuran(data) {
   if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">Tidak ada data</div></td></tr>'; return; }
   tbody.innerHTML = data.map(item => {
     const paket = item.iuran?.keterangan;
-    const paketLabel = paket === '50000' ? '<br><span style="font-size:10px;background:#EFF6FF;color:#1565C0;padding:1px 6px;border-radius:8px;font-weight:700;">💰 50rb</span>'
-      : paket === '70000' ? '<br><span style="font-size:10px;background:#F0FDF4;color:#2E7D32;padding:1px 6px;border-radius:8px;font-weight:700;">💰 70rb</span>'
-      : paket === '20000' ? '<br><span style="font-size:10px;background:#FEF3C7;color:#D97706;padding:1px 6px;border-radius:8px;font-weight:700;">💰 20rb</span>'
+    const paketCfg = (state.paketIuran || []).find(p => p.kode === paket);
+    const paketLabel = paketCfg
+      ? `<br><span style="font-size:10px;background:#EFF6FF;color:#1565C0;padding:1px 6px;border-radius:8px;font-weight:700;">💰 ${paketCfg.label}</span>`
       : '';
     return `<tr>
       <td><b>Blok ${item.blok}-${item.nomor_rumah}</b></td>

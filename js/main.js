@@ -29,6 +29,7 @@ async function startApp() {
   });
 
   // Initial Load
+  await app.loadPaketIuran();
   await app.loadDashboard();
   initFilterBulanTahun('filter-bulan-iuran', 'filter-tahun-iuran', () => app.loadIuran());
   initFilterBulanTahun('i-bulan-tagihan', 'i-tahun-tagihan');
@@ -197,6 +198,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   const genIuranBtn = document.getElementById('btn-generate-iuran');
   if (genIuranBtn) genIuranBtn.onclick = () => app.generateIuranBulanan();
+  
+  const kelolaPaketBtn = document.getElementById('btn-kelola-paket');
+  if (kelolaPaketBtn) {
+    kelolaPaketBtn.onclick = () => {
+      app.renderPaketList();
+      openModal('modal-paket-iuran');
+    };
+  }
+  
+  const tambahPaketBtn = document.getElementById('btn-tambah-paket');
+  if (tambahPaketBtn) {
+    tambahPaketBtn.onclick = () => {
+      const list = document.getElementById('paket-list');
+      if (!list) return;
+      const row = document.createElement('div');
+      row.className = 'paket-row';
+      row.style.cssText = 'background:#F8FAFC;border-radius:8px;padding:10px;border:1px solid #E2E8F0;';
+      row.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+          <div><label style="font-size:10px;color:#64748B;">Kode</label><input type="text" class="p-kode" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+          <div><label style="font-size:10px;color:#64748B;">Label</label><input type="text" class="p-label" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:end;">
+          <div><label style="font-size:10px;color:#64748B;">Nominal</label><input type="number" class="p-nominal" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+          <div><label style="font-size:10px;color:#64748B;">Potongan</label><input type="number" class="p-potongan" style="width:100%;padding:6px 8px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:12px;"></div>
+          <button type="button" class="btn btn-danger btn-sm hapus-paket-btn" style="padding:6px 10px;font-size:12px;">🗑️</button>
+        </div>`;
+      list.appendChild(row);
+    };
+  }
+  
+  const formPaketIuran = document.getElementById('form-paket-iuran');
+  if (formPaketIuran) formPaketIuran.onsubmit = (e) => app.savePaketIuranConfig(e);
   
   const formIuran = document.getElementById('form-iuran');
   if (formIuran) formIuran.onsubmit = (e) => app.saveIuran(e);
@@ -407,17 +441,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('i-warga-id').value = wargaId;
       document.getElementById('i-bulan-tagihan').value = document.getElementById('filter-bulan-iuran').value;
       document.getElementById('i-tahun-tagihan').value = document.getElementById('filter-tahun-iuran').value;
+      app.renderPaketIuranDropdown();
       const { data } = await db.from('iuran').select('*').eq('warga_id', wargaId).eq('bulan', document.getElementById('i-bulan-tagihan').value).eq('tahun', document.getElementById('i-tahun-tagihan').value).maybeSingle();
+      const defaultKode = state.paketIuran?.[0]?.kode || '';
       if (data) {
         document.getElementById('i-id').value = data.id;
         document.getElementById('i-status').value = data.status;
         document.getElementById('i-nominal').value = data.nominal;
-        document.getElementById('i-ket').value = [50000, 70000, 20000].includes(data.nominal) ? String(data.nominal) : '50000';
+        const matched = (state.paketIuran || []).find(p => p.kode === String(data.nominal) || p.nominal === data.nominal);
+        document.getElementById('i-ket').value = matched ? matched.kode : defaultKode;
       } else {
         document.getElementById('i-id').value = '';
         document.getElementById('i-status').value = 'belum';
-        document.getElementById('i-nominal').value = 50000;
-        document.getElementById('i-ket').value = '50000';
+        document.getElementById('i-nominal').value = parseInt(defaultKode) || 50000;
+        document.getElementById('i-ket').value = defaultKode;
       }
       openModal('modal-iuran');
     }
@@ -453,6 +490,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     if (target.classList.contains('delete-kegiatan-btn')) app.deleteKegiatan(target.getAttribute('data-id'));
+
+    if (target.classList.contains('hapus-paket-btn')) {
+      const row = target.closest('.paket-row');
+      if (row) row.remove();
+    }
 
     if (target.classList.contains('send-wa-btn')) {
       const wargaId = target.getAttribute('data-warga-id');

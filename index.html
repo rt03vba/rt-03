@@ -214,7 +214,10 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">Iuran Warga</span>
-          <button class="btn btn-primary btn-sm admin-only" id="btn-generate-iuran" style="display:none;">⚡ Generate</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-primary btn-sm admin-only" id="btn-generate-iuran" style="display:none;">⚡ Generate</button>
+            <button class="btn btn-outline btn-sm admin-only" id="btn-kelola-paket" style="display:none;font-size:11px;">⚙️ Paket</button>
+          </div>
         </div>
         <div class="flex-row" style="margin-bottom:12px;">
           <select id="filter-bulan-iuran" style="flex:1;"></select>
@@ -496,6 +499,21 @@
   <div class="modal">
     <div class="modal-header"><span class="modal-title">Device Login Admin</span><button class="modal-close" data-close="modal-device">✕</button></div>
     <div id="modal-device-content"></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-paket-iuran">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Kelola Paket Iuran</span><button class="modal-close" data-close="modal-paket-iuran">✕</button></div>
+    <form id="form-paket-iuran">
+      <p style="font-size:12px;color:#757575;margin-bottom:12px;">Atur paket iuran. Potongan akan otomatis dikurangi untuk biaya akomodasi warga.</p>
+      <div id="paket-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-tambah-paket" style="width:100%;">+ Tambah Paket</button>
+      <div class="flex-row" style="margin-top:16px;">
+        <button type="submit" class="btn btn-primary">💾 Simpan</button>
+        <button type="button" class="btn btn-outline" data-close="modal-paket-iuran">Batal</button>
+      </div>
+    </form>
   </div>
 </div>
 
